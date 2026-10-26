@@ -296,12 +296,13 @@ export function applyLiveActionByCode(accessCode, action, options) {
   return serialByCode(accessCode, () => applyLiveActionUnqueued(accessCode, action, options));
 }
 
-async function applyLiveActionUnqueued(accessCode, action, { maxAttempts = 8 } = {}) {
+async function applyLiveActionUnqueued(accessCode, action, { maxAttempts = 8, targetId } = {}) {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     // Fresh document each attempt: retries re-apply onto the latest state.
     const presentation = await findLiveByCode(accessCode);
     if (!presentation) return null;
     try {
+      if (targetId !== undefined && String(presentation._id) !== targetId) throw new LiveError('Your session expired. Reload the page to rejoin.', 'invalid_credential');
       applyLiveAction(presentation, action);
       await presentation.save();
       return presentation;

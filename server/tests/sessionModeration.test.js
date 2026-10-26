@@ -16,7 +16,8 @@ describe('moderation on a session run', () => {
     await request(app).post(`/api/presentations/${deck._id}/moderation/mode`).set(auth(t)).send({ mode: 'approve' });
     const run = (await request(app).post(`/api/presentations/${deck._id}/sessions`).set(auth(t))).body.data;
 
-    await request(app).post(`/api/live/${run.code}/action`).send({ type: 'response:add', slideIndex: 0, text: 'held-in-run', participantId: 'p-aaaaaa' });
+    const cred = (await request(app).post(`/api/live/${run.code}/credential`).send({ participantId: 'p-aaaaaa' })).body;
+    await request(app).post(`/api/live/${run.code}/action`).set('x-participant-token', cred.token).send({ type: 'response:add', slideIndex: 0, text: 'held-in-run', participantId: 'p-aaaaaa' }).expect(200);
     const pub = async () => JSON.stringify((await request(app).get(`/api/live/${run.code}/state`)).body.data);
     expect(await pub()).not.toContain('held-in-run');
 

@@ -39,6 +39,9 @@ const blankSlides = (slides) =>
       revealed: false,
       ...(correctAt >= 0 ? { correctOptionId: options[correctAt].id } : {}),
       ...(design ? { design } : {}),
+      ...(slide.timeLimit != null ? { timeLimit: slide.timeLimit } : {}),
+      ...(slide.body != null ? { body: slide.body } : {}),
+      ...(slide.columns ? { columns: slide.columns.map(({ title, text }) => ({ title, text })) } : {}),
     };
   });
 
@@ -65,6 +68,7 @@ sessionsRouter.post('/presentations/:id/sessions', authenticate, async (req, res
       deckRevision: deck.structureRevision ?? 0,
       title: deck.title,
       theme: deck.theme,
+      quizScoring: deck.quizScoring,
       slides: blankSlides(deck.slides),
       moderationMode: deck.moderationMode ?? 'off',
       code,
