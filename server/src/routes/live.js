@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { findLiveByCode, liveExistsByCode, sendCodeMissing } from '../lib/liveTarget.js';
 import { applyLiveActionByCode, liveActionSchema, publicState } from '../lib/live.js';
 import { answersFor } from '../lib/answers.js';
-import { guardAudienceAction, signParticipantToken, verifyParticipantToken, limitCredentialIssue } from '../lib/audience.js';
+import { participantScope, guardAudienceAction, signParticipantToken, verifyParticipantToken, limitCredentialIssue } from '../lib/audience.js';
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { createSubscriberToken, publishState, getAblyRest } from '../ably.js';
@@ -47,12 +47,12 @@ liveRouter.post('/:accessCode/credential', async (req, res, next) => {
   try {
     limitCredentialIssue(req.ip);
     const { participantId, token } = credentialBody.parse(req.body ?? {});
-    const exists = await liveExistsByCode(req.params.accessCode);
-    if (!exists) return sendCodeMissing(res, req.params.accessCode);
+    const target = await findLiveByCode(req.params.accessCode);
+    if (!target) return sendCodeMissing(res, req.params.accessCode);
     let id;
     if (token) {
       try {
-        id = verifyParticipantToken(token, req.params.accessCode);
+        id = verifyParticipantToken(token, req.params.accessCode, participantScope(target));
       } catch {
         id = participantId ?? `p-${randomUUID()}`; // expired: continue as the same browser if it tells us who it was
       }
@@ -60,7 +60,7 @@ liveRouter.post('/:accessCode/credential', async (req, res, next) => {
       id = participantId ?? `p-${randomUUID()}`;
     }
     res.set('Cache-Control', 'private, no-store');
-    return res.json({ participantId: id, token: signParticipantToken(req.params.accessCode, id) });
+    return res.json({ participantId: id, token: signParticipantToken(req.params.accessCode, id, participantScope(target)) });
   } catch (err) {
     if (err.code === 'rate_limited') return res.status(429).set('Retry-After', String(err.retryAfterSeconds)).json({ message: err.message, code: err.code });
     if (err.name === 'ZodError') return res.status(400).json({ message: 'Invalid request' });
@@ -71,19 +71,21 @@ liveRouter.post('/:accessCode/credential', async (req, res, next) => {
 /** The caller's own answers, keyed by the anonymous participant id sent in a header (kept out of URLs and logs). */
 liveRouter.get('/:accessCode/me', async (req, res, next) => {
   try {
+    const presentation = await findLiveByCode(req.params.accessCode);
+    if (!presentation) return sendCodeMissing(res, req.params.accessCode);
     let participantId = req.get('x-participant-id');
     const bearer = req.get('x-participant-token');
-    if (bearer) participantId = verifyParticipantToken(bearer, req.params.accessCode); // the credential decides who is asking
+    if (bearer) participantId = verifyParticipantToken(bearer, req.params.accessCode, participantScope(presentation)); // the credential decides who is asking
     if (!participantId || participantId.length < 6 || participantId.length > 64) {
       return res.status(400).json({ message: 'x-participant-id header is required' });
     }
-    const presentation = await findLiveByCode(req.params.accessCode);
-    if (!presentation) return sendCodeMissing(res, req.params.accessCode);
+    if (participantScope(presentation) && !bearer) return res.status(401).json({ message: 'Reload the page to rejoin this presentation.', code: 'credential_required' });
     res.set("Cache-Control", "private, no-store");
     res.vary("x-participant-id");
     res.vary("x-participant-token");
     return res.json({ data: answersFor(presentation, participantId) });
   } catch (err) {
+    if (err.code === 'invalid_credential') return res.status(401).json({ message: err.message, code: err.code });
     return next(err);
   }
 });
@@ -91,8 +93,8 @@ liveRouter.get('/:accessCode/me', async (req, res, next) => {
 liveRouter.post('/:accessCode/action', async (req, res, next) => {
   try {
     const action = liveActionSchema.parse(req.body);
-    guardAudienceAction({ accessCode: req.params.accessCode, action, token: req.get('x-participant-token'), ip: req.ip });
-    const presentation = await applyLiveActionByCode(req.params.accessCode, action);
+    const targetId = await guardAudienceAction({ accessCode: req.params.accessCode, action, token: req.get('x-participant-token'), ip: req.ip });
+    const presentation = await applyLiveActionByCode(req.params.accessCode, action, { targetId });
     if (!presentation) return sendCodeMissing(res, req.params.accessCode);
     const state = publicState(presentation);
     await publishState(req.params.accessCode, state);

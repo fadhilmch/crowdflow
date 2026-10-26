@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { findLiveByCode } from './liveTarget.js';
 import { config } from '../config.js';
 import { createRateLimiter } from './rateLimiter.js';
 
@@ -40,17 +41,17 @@ export function resetAudienceLimiters() {
 
 const CREDENTIAL_DAYS = 30;
 
-/** Issues a participant credential scoped to one presentation (join code). */
-export function signParticipantToken(accessCode, participantId) {
-  return jwt.sign({ typ: 'participant', aud: `presentation:${accessCode}`, sub: participantId }, config.jwtSecret, {
+/** Session credentials bind to the immutable run id; legacy deck credentials keep their code scope. */
+export function signParticipantToken(accessCode, participantId, scope) {
+  return jwt.sign({ typ: 'participant', aud: scope ?? `presentation:${accessCode}`, sub: participantId }, config.jwtSecret, {
     algorithm: 'HS256',
     expiresIn: `${CREDENTIAL_DAYS}d`,
   });
 }
 
-export function verifyParticipantToken(token, accessCode) {
+export function verifyParticipantToken(token, accessCode, scope) {
   try {
-    const p = jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'], audience: `presentation:${accessCode}` });
+    const p = jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'], audience: scope ?? `presentation:${accessCode}` });
     if (p.typ !== 'participant' || typeof p.sub !== 'string') throw new Error('wrong token type');
     return p.sub;
   } catch {
@@ -67,22 +68,28 @@ export function limitCredentialIssue(ip) {
   if (!r.ok) throw tooMany(r.retryAfterSeconds);
 }
 
+/** Immutable run identity; undefined keeps legacy deck token compatibility. */
+export const participantScope = (target) => target?.code != null ? `session:${target._id}` : undefined;
+
 /**
  * Gate for every audience action, shared by HTTP and sockets.
  * - A credential, when presented, must belong to this presentation and to the participant the
  *   action names, so changing the payload id cannot act as someone else.
- * - Without a credential the action is accepted only while legacy ids are still allowed
+ * - Separate sessions always require a run-scoped credential. For legacy decks, an action
+ *   without a credential is accepted only while legacy ids are still allowed
  *   (REQUIRE_PARTICIPANT_TOKEN unset), keeping already-open clients working during rollout.
  * - Limits: per participant (answers, nickname changes) and a generous per-IP backstop.
  */
-export function guardAudienceAction({ accessCode, action, token, ip }) {
+export async function guardAudienceAction({ accessCode, action, token, ip }) {
+  const target = await findLiveByCode(accessCode);
+  const scope = participantScope(target);
   if (!('participantId' in action)) return; // presenter actions are authorised elsewhere
   if (token) {
-    const owner = verifyParticipantToken(token, accessCode);
+    const owner = verifyParticipantToken(token, accessCode, scope);
     if (owner !== action.participantId) {
       throw new LiveError('That action does not belong to this participant.', 'participant_mismatch');
     }
-  } else if (process.env.REQUIRE_PARTICIPANT_TOKEN === 'true') {
+  } else if (scope || process.env.REQUIRE_PARTICIPANT_TOKEN === 'true') {
     throw new LiveError('Reload the page to rejoin this presentation.', 'credential_required');
   }
   const l = getLimiters();
@@ -91,4 +98,5 @@ export function guardAudienceAction({ accessCode, action, token, ip }) {
   const bucket = action.type === 'participant:identify' ? l.identify : l.answers;
   const hit = bucket.hit(`${accessCode}:${action.participantId}`);
   if (!hit.ok) throw tooMany(hit.retryAfterSeconds);
+  return target ? String(target._id) : null;
 }

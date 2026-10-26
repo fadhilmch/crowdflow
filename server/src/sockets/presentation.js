@@ -81,8 +81,8 @@ export function registerPresentationSockets(io) {
       if (!joinedCode) return ack({ ok: false, message: 'Join a presentation first' });
       try {
         const action = liveActionSchema.parse({ type: payload?.type, ...payload });
-        guardAudienceAction({ accessCode: joinedCode, action, token: payload?.token, ip: socket.handshake?.address });
-        const presentation = await applyLiveActionByCode(joinedCode, action);
+        const targetId = await guardAudienceAction({ accessCode: joinedCode, action, token: payload?.token, ip: socket.handshake?.address });
+        const presentation = await applyLiveActionByCode(joinedCode, action, { targetId });
         if (!presentation) return ack({ ok: false, message: 'Presentation is gone' });
         await broadcastTo(io, joinedCode);
         return ack({ ok: true });
