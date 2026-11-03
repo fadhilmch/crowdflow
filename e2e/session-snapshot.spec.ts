@@ -36,9 +36,9 @@ test('a separate session preserves title, columns, timer and speed scoring throu
     // Advancing onto a timed question starts its clock automatically.
     await expect(phone.getByTestId('question-timer')).toBeVisible()
     await phone.locator('.option-button').first().click()
-    await expect(phone.getByText(/Answer locked in/)).toBeVisible()
+    await expect(phone.getByText(/Answer saved/)).toBeVisible()
     await phone.reload()
-    await expect(phone.getByText(/Answer locked in/)).toBeVisible()
+    await expect(phone.getByText(/Answer saved/)).toBeVisible()
     await expect(phone.getByText(/Time's up|Voting is closed/)).toBeVisible({ timeout: 16000 })
     await phone.screenshot({ path: '/tmp/cf-fixed-session-quiz.png', fullPage: true })
   } finally { await ctx.close() }

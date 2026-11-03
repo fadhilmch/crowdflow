@@ -13,7 +13,7 @@ const total = computed(() => rows.value.reduce((sum, row) => sum + row.count, 0)
 const message = computed(() => {
   if (kind.value === 'quiz' && revealed.value) return selected.value === null ? 'Answer revealed: Mercury.' : selected.value === QUIZ_CORRECT ? 'Correct! Mercury is closest to the Sun.' : 'The correct answer is Mercury. Try again with Reset demo.'
   if (!open.value) return 'Voting is closed in this demo.'
-  if (selected.value !== null) return kind.value === 'quiz' ? 'Answer locked in. Reveal it on the stage.' : 'Your answer is on the stage. Try another option.'
+  if (selected.value !== null) return kind.value === 'quiz' ? 'Answer saved. Change it until the answer is revealed.' : 'Your answer is on the stage. Try another option.'
   return kind.value === 'word-cloud' ? 'Tap a word to grow it on the stage.' : 'Tap an answer on the phone.'
 })
 function reset(next: DemoKind = kind.value) {
@@ -56,7 +56,7 @@ function answer(index: number) {
       <section class="phone" aria-label="Demo audience phone">
         <p class="surface-label"><img src="../../assets/logo-mark.svg" alt="" /> On your phone</p>
         <p class="pq">{{ sample.question }}</p>
-        <button v-for="(row, i) in rows" :key="row.label" type="button" class="opt" :class="{ sel: selected === i }" :aria-pressed="selected === i" :disabled="!open || (kind === 'quiz' && selected !== null)" @click="answer(i)"><span aria-hidden="true">{{ selected === i ? '●' : '○' }}</span>{{ row.label }}</button>
+        <button v-for="(row, i) in rows" :key="row.label" type="button" class="opt" :class="{ sel: selected === i }" :aria-pressed="selected === i" :disabled="!open || (kind === 'quiz' && revealed)" @click="answer(i)"><span aria-hidden="true">{{ selected === i ? '●' : '○' }}</span>{{ row.label }}</button>
       </section>
     </div>
     <p class="feedback" role="status">{{ message }}</p>

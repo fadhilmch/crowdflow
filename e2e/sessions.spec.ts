@@ -16,7 +16,7 @@ test('starting a session gives a new code; answers stay with the run, not the de
 
   const voter = await joinAudience(browser, sessionCode)
   await voter.getByRole('button', { name: /Beta/ }).click()
-  await expect(voter.getByText(/Answer locked in/)).toBeVisible()
+  await expect(voter.getByText(/Answer saved/)).toBeVisible()
 
   await expect(async () => {
     const run = await (await request.get(`/api/live/${sessionCode}/state`)).json()

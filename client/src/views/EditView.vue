@@ -70,6 +70,7 @@ interface DraftData {
   location: string
   themeId: string
   slides: EditableSlide[]
+  quizScoring?: 'standard' | 'speed'
 }
 
 const route = useRoute()
@@ -105,7 +106,8 @@ const historyTick = ref(0) // bumps so the buttons re-read canUndo/canRedo
 let restoring = false
 const canUndo = computed(() => (historyTick.value, history.canUndo))
 const canRedo = computed(() => (historyTick.value, history.canRedo))
-const snapshot = () => JSON.stringify({ title: title.value, location: location.value, themeId: themeId.value, slides: slides.value })
+const snapshot = () => JSON.stringify({ title: title.value, location: location.value, themeId: themeId.value, slides: slides.value, quizScoring: quizScoring.value })
+let savedSnapshot = snapshot()
 
 function applySnapshot(json: string) {
   const d = JSON.parse(json) as DraftData
@@ -114,6 +116,7 @@ function applySnapshot(json: string) {
   location.value = d.location
   themeId.value = d.themeId
   slides.value = d.slides
+  quizScoring.value = d.quizScoring ?? 'standard'
   if (activeSlide.value >= d.slides.length) activeSlide.value = Math.max(0, d.slides.length - 1)
   historyTick.value += 1
   void nextTick(() => { restoring = false })
@@ -179,12 +182,13 @@ function applyLoaded(p: LoadedPresentation) {
     correctOptionId: s.correctOptionId,
     design: s.design ? { ...s.design } : {},
   }))
+  savedSnapshot = snapshot()
   if (!slides.value.length) {
     // Fresh decks open with the starter for the chosen creation kind; Blank starts empty.
     const starter = creationTemplate(startKind ?? 'presentation').starterSlide
     if (starter) addSlide(starter)
   }
-  dirty.value = false
+  dirty.value = snapshot() !== savedSnapshot
   restoring = true
   void nextTick(() => { restoring = false; history.reset(snapshot()); historyTick.value += 1 })
 }
@@ -205,6 +209,7 @@ function useTheirs() {
     title: title.value,
     location: location.value,
     themeId: themeId.value,
+    quizScoring: quizScoring.value,
     slides: JSON.parse(JSON.stringify(slides.value)),
   })
   applyLoaded(conflictTheirs)
@@ -248,16 +253,18 @@ onBeforeUnmount(() => {
 
 watch([title, location, themeId, slides, quizScoring], () => {
   if (!ready.value) return
-  dirty.value = true
+  dirty.value = snapshot() !== savedSnapshot
   if (!restoring) {
     history.record(snapshot())
     historyTick.value += 1
   }
-  if (!pendingDraft.value) {
+  if (!dirty.value && !pendingDraft.value) clearDraft(id)
+  else if (!pendingDraft.value) {
     saveDraft<DraftData>(id, structureRevision.value, {
       title: title.value,
       location: location.value,
       themeId: themeId.value,
+      quizScoring: quizScoring.value,
       slides: JSON.parse(JSON.stringify(slides.value)),
     })
   }
@@ -270,6 +277,7 @@ function restoreDraft() {
   location.value = d.data.location
   themeId.value = d.data.themeId
   slides.value = d.data.slides
+  quizScoring.value = d.data.quizScoring ?? 'standard'
   pendingDraft.value = null
 }
 
@@ -583,7 +591,7 @@ function remove() {
         <div class="editor-actions">
           <button class="button ghost hist-btn" :disabled="!canUndo" aria-label="Undo" title="Undo (Ctrl+Z)" @click="undo"><span class="ic" aria-hidden="true">↶</span><span class="lbl">Undo</span></button>
           <button class="button ghost hist-btn" :disabled="!canRedo" aria-label="Redo" title="Redo (Ctrl+Shift+Z)" @click="redo"><span class="ic" aria-hidden="true">↷</span><span class="lbl">Redo</span></button>
-          <span v-if="savedAt" class="muted saved-at">Saved {{ savedAt }}</span>
+          <span class="muted saved-at" role="status">{{ dirty ? 'Unsaved changes' : savedAt ? `Saved ${savedAt}` : 'No unsaved changes' }}</span>
           <router-link v-if="savedSlideCount && slides.length" class="button ghost" :to="{ name: 'present', params: { code: accessCode } }">Present</router-link>
           <span v-else class="muted" role="status">Add and save a slide to present.</span>
           <button class="button danger" :disabled="deleting" @click="remove">
@@ -1067,7 +1075,7 @@ function remove() {
   .copy-link { order: 1; }
   .editor-header .button.big { order: 1; margin-left: auto; }
   .hist-btn { order: 1; }
-  .saved-at { display: none; }
+  .saved-at { flex-basis: 100%; text-align: right; order: 1; }
   .editor-header .button {
     min-height: 40px;
     padding: 0 var(--space-3);

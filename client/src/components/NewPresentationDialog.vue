@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
+import { radioIndex } from '../editor/dialogKeys'
 import { CREATION_TEMPLATES, creationTemplate, type CreationKind } from '../editor/creationTemplates'
 
 const props = withDefaults(defineProps<{ open: boolean; busy?: boolean; error?: string }>(), { busy: false, error: '' })
@@ -8,15 +9,39 @@ const emit = defineEmits<{ create: [kind: CreationKind, title: string]; close: [
 const kind = ref<CreationKind>('quiz')
 const title = ref('')
 const nameInput = ref<HTMLInputElement | null>(null)
+const dialog = ref<HTMLDialogElement | null>(null)
+let opener: HTMLElement | null = null
+function containFocus(event: KeyboardEvent) {
+  if (event.key !== 'Tab') return
+  const items = Array.from(dialog.value?.querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]), input:not(:disabled)') ?? [])
+  const first = items[0], last = items.at(-1)
+  if ((!event.shiftKey && document.activeElement === last) || (event.shiftKey && document.activeElement === first)) {
+    event.preventDefault()
+    ;(event.shiftKey ? last : first)?.focus()
+  }
+}
+function moveChoice(event: KeyboardEvent) {
+  const index = CREATION_TEMPLATES.findIndex(t => t.kind === kind.value)
+  const next = radioIndex(event.key, index, CREATION_TEMPLATES.length)
+  if (next === null) return
+  event.preventDefault()
+  kind.value = CREATION_TEMPLATES[next].kind
+  void nextTick(() => dialog.value?.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus())
+}
 
 watch(
   () => props.open,
   async (open) => {
     if (open) {
+      opener = document.activeElement as HTMLElement | null
       kind.value = 'quiz'
       title.value = ''
       await nextTick()
+      dialog.value?.showModal()
       nameInput.value?.focus()
+    } else {
+      dialog.value?.close()
+      opener?.focus()
     }
   },
 )
@@ -34,11 +59,11 @@ function submit() {
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="np-overlay" role="dialog" aria-modal="true" aria-label="New presentation" @click.self="close" @keydown.esc="close">
+    <dialog v-if="open" ref="dialog" class="np-overlay" aria-label="New presentation" @click.self="close" @cancel.prevent="close" @keydown="containFocus">
       <div class="np-sheet">
         <h2 class="np-title">New presentation</h2>
         <p class="np-sub">Choose how it starts. You can mix every slide type in the editor either way.</p>
-        <div class="np-choices" role="radiogroup" aria-label="Starting point">
+        <div class="np-choices" role="radiogroup" aria-label="Starting point" @keydown="moveChoice">
           <button
             v-for="t in CREATION_TEMPLATES"
             :key="t.kind"
@@ -47,6 +72,7 @@ function submit() {
             :class="{ sel: kind === t.kind }"
             role="radio"
             :aria-checked="kind === t.kind"
+            :tabindex="kind === t.kind ? 0 : -1"
             @click="kind = t.kind"
           >
             <b>{{ t.name }}</b>
@@ -71,17 +97,18 @@ function submit() {
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   </Teleport>
 </template>
 
 <style scoped>
 .np-overlay {
+  border: 0; margin: 0; width: 100%; height: 100%; max-width: none; max-height: none;
   position: fixed; inset: 0; z-index: 60; display: grid; place-items: center;
   background: rgb(0 0 0 / 0.55); padding: var(--space-4);
 }
 .np-sheet {
-  width: min(560px, 100%); padding: var(--space-5);
+  max-height: 100%; overflow-y: auto; width: min(560px, 100%); padding: var(--space-5);
   background: var(--paper); color: var(--ink); border-radius: 20px; box-shadow: 0 24px 60px rgb(0 0 0 / 0.4);
 }
 .np-title { margin: 0 0 var(--space-2); font-size: 1.15rem; }

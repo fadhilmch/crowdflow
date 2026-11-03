@@ -270,6 +270,7 @@ async function sendRanking() {
   <div class="audience-page">
     <ConnectionBanner role="audience" />
     <section v-if="ended" class="card session-ended" role="status">
+      <p v-if="state?.title" class="audience-title">{{ state.title }}</p>
       <h1>{{ gone && !endedSession ? 'Presentation unavailable' : 'Thanks for taking part!' }}</h1>
       <p>{{ gone && !endedSession ? 'This presentation has ended or was deleted.' : 'The presenter has ended this presentation.' }} Answers can no longer be sent.</p>
       <router-link class="button secondary" :to="{ name: 'join' }">Join another presentation</router-link>
@@ -277,7 +278,7 @@ async function sendRanking() {
     <p v-else-if="error" class="error-banner" role="alert">{{ error }}</p>
     <p v-if="!state && !ended" class="connecting">Connecting…</p>
     <template v-else-if="state">
-      <p class="audience-title"><span v-if="!ended" class="live-dot"></span>{{ state.title }}</p>
+      <p v-if="!ended" class="audience-title"><span v-if="!ended" class="live-dot"></span>{{ state.title }}</p>
       <form v-if="askName" class="name-card" @submit.prevent="saveName">
         <label for="leaderboard-name">Choose your nickname</label>
         <input id="leaderboard-name" v-model="nameDraft" maxlength="24" placeholder="e.g. Fika Fan" autocomplete="off" />
@@ -287,7 +288,7 @@ async function sendRanking() {
           <span v-if="sending === 'name'" class="spinner" aria-hidden="true"></span>{{ sending === 'name' ? 'Saving…' : 'Save nickname' }}
         </button>
       </form>
-      <template v-if="slide && !askName">
+      <template v-if="slide && !askName && !ended">
         <LayoutContent v-if="isLayout" :slide="slide" variant="audience" />
         <div
           v-else
@@ -328,7 +329,7 @@ async function sendRanking() {
           </p>
           <p v-else-if="timeUp && votingOpen" class="voting-closed">Time is up - waiting for the answer…</p>
           <p v-else-if="votingOpen && myVotes[state.currentSlide] !== undefined" class="muted">
-            Answer locked in - tap another option to change it.
+            Answer saved - tap another option to change it before voting closes.
           </p>
           <p v-if="!votingOpen && !ended" class="voting-closed">Voting is closed - waiting for the presenter…</p>
         </template>

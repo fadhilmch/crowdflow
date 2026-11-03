@@ -52,7 +52,7 @@ test.describe('accessibility', () => {
       await page.keyboard.press('Tab')
     }
     await page.keyboard.press('Space')
-    await expect(page.getByText(/Answer locked in/)).toBeVisible()
+    await expect(page.getByText(/Answer saved/)).toBeVisible()
     await page.context().close()
   })
 

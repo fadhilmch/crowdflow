@@ -73,6 +73,15 @@ Run the app (`npm run dev:memory` in `server/` with the client built), then comp
 
 - Keep product demos explicitly labelled as sample-only and separate from joining. No fictitious live room, join code, audience count or automatic votes. Counts must add up.
 - The landing poll, word cloud and quiz use `client/src/landing/demo.ts` for their sample data and answer rules. Components hold only ephemeral UI state. Switching question type and Reset demo clear the visitor's answer and presenter controls.
-- Demo choices are native buttons with pressed states, visible focus and at least 44px hit targets. Quiz choices lock until reset. Closing voting disables the phone; hiding results does not disable voting. Keep status feedback outside the stage so it remains available when results are hidden.
+- Demo choices are native buttons with pressed states, visible focus and at least 44px hit targets. Quiz choices can change until reveal, matching the real app; reveal locks them until reset. Closing voting disables the phone; hiding results does not disable voting. Keep status feedback outside the stage so it remains available when results are hidden.
 - Use paired stage/phone composition where both remain readable; stack on very narrow phones. A phone hero must get to the interactive proof before long explanatory sections.
 - Product screenshots are real seeded local app captures, not decorative grey-bar mockups or private user decks. Captions explain the task. Images have descriptive alt text, fixed aspect ratio and a full-size link for phone readers. The screenshots are light-mode Candy even when the surrounding page is dark; preserve the actual product pixels.
+
+## First-use feedback and keyboard behavior
+
+- Editor dirty state compares the current snapshot with the last loaded/saved snapshot. Show saved or unsaved feedback on phone and desktop; successful Save must not trigger a leave warning.
+- New presentation uses a modal dialog with focus containment, return to opener, and roving arrow-key radio selection.
+- Landing and standalone join use the same join helper; the hero joins once and shows busy/errors beside the form.
+- Ended audience screens show the terminal message and any final leaderboard, never active answer controls or waiting-for-results copy.
+- Put real product proof directly after the demo. Phone editor proof is a crop of the actual editor capture with an explicit full-editor link; steps and types stay compact.
+- Session-enabled dashboards make fresh sessions primary and explain new-code/blank-answer versus existing-code/kept-answer behavior in visible text.

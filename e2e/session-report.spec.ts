@@ -10,7 +10,7 @@ test('each run has its own report, and an ended run is frozen', async ({ browser
   const run1 = await start()
   const voter = await joinAudience(browser, run1.code)
   await voter.getByRole('button', { name: /Beta/ }).click()
-  await expect(voter.getByText(/Answer locked in/)).toBeVisible()
+  await expect(voter.getByText(/Answer saved/)).toBeVisible()
   await request.post(`/api/sessions/${run1.id}/end`, { headers: auth })
   await start() // a second, empty run
 

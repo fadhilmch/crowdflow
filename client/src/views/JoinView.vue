@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLiveStore } from '../stores/live'
+import { joinPresentation } from '../live/joinPresentation'
 
 const router = useRouter()
 const route = useRoute()
@@ -21,17 +22,7 @@ async function join() {
   }
   busy.value = true
   try {
-    await live.join(accessCode)
-    // A name saved on this device from an earlier quiz carries over. New players are asked for one
-    // on the audience screen, and only when the deck has a quiz.
-    const saved = localStorage.getItem('livepoll.nickname')
-    if (saved?.trim()) {
-      try {
-        await live.identify(saved)
-      } catch {
-        // A missed nickname never blocks joining; the alias is the fallback.
-      }
-    }
+    await joinPresentation(live, accessCode)
     router.push({ name: 'audience', params: { code: accessCode } })
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Could not join. Check the code and try again.'
