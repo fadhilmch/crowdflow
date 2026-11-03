@@ -1,6 +1,6 @@
 # Live sessions: design and migration preview (brief 05)
 
-Status: PREVIEW. The model and migration exist and are tested, but no live route uses them. Nothing here changes running behaviour, and the migration has not been run against any real database.
+Status: BUILT BEHIND A FLAG (`SESSIONS_ENABLED=true`, off by default). The model, lifecycle routes, session-bound audience flow, reports, moderation, retention script and dashboard buttons exist and have tests, including browser tests (`E2E_SESSIONS=true`). The migration script has never been run against a real database, and the production flag state has not been verified. Turning it on is an owner decision, after a migration dry run.
 
 ## Problem
 A deck, its answers, its participants and its join code are one document. Running a deck again means resetting it, and the earlier run's results are gone.
@@ -10,7 +10,7 @@ A deck, its answers, its participants and its join code are one document. Runnin
 - The snapshot is the unit that answers attach to. Editing the deck cannot change a running or finished session.
 - A code belongs to one active session (partial unique index). Ending a session releases it, so a code may be reused later. Participant credentials must be bound to the session id (not just the code) so an old credential cannot enter a different run. That binding is part of the live-route follow-up, not this preview.
 
-## Behaviour planned for the follow-up (not implemented)
+## Behaviour (originally planned in this preview, since built behind the flag; see the sections below)
 - start: copy the deck, allocate a code (retry on unique-index collision), status active.
 - repeat: start again from the same deck; the earlier session stays readable.
 - end: status ended, reject HTTP and socket answers, tell connected clients.
@@ -32,7 +32,7 @@ Retention period for ended sessions, whether decks keep a "current session" poin
 
 With `SESSIONS_ENABLED=true`: `POST /api/presentations/:id/sessions` (start, or run again: new code, blank answers, snapshot of the deck), `GET /api/presentations/:id/sessions`, `POST /api/sessions/:sid/end`, `/archive`, `DELETE /api/sessions/:sid` (active sessions must be ended first). Owner only. Deck codes and active session codes never collide.
 
-Still not done: audience join and live actions against a session (answers still go to the deck), session-bound participant credentials, retention/expiry, UI. Turning the flag on in production is an owner decision, after the migration dry run.
+Status of this section: the lifecycle routes below are built. Audience join, live actions and session-bound credentials are covered in the next section. Turning the flag on in production is an owner decision, after the migration dry run.
 
 ## Answers, credentials and retention (still flagged off)
 
@@ -40,4 +40,4 @@ With `SESSIONS_ENABLED=true` a join code points at its active session first, the
 
 Retention: `node server/scripts/purge-sessions.js --days N [--apply]` removes ended or archived sessions older than N days (dry run by default). Nothing runs it automatically. The retention period is the owner's decision.
 
-Not done: the presenter and audience web screens still address the deck, so the client has no way to start a session or present one yet.
+Client: the dashboard shows a Start session button and the report page lists runs (End, Archive, Delete) when `/api/features` reports sessions on. The presenter and audience screens follow the join code, so a session code works like a deck code.

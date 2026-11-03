@@ -209,6 +209,7 @@ Business logic (code generation, tally math, vote/upvote rules) lives in pure fu
 
 - [Design system](docs/DESIGN_SYSTEM.md): tokens, light/dark rules, what not to hard-code.
 - [Dependency licences](docs/DEPENDENCY_LICENSES.md): licence summary of the lockfiles.
+- [Handoff status](docs/handoff-status.md): where each of the ten engineer-handoff briefs stands, with evidence.
 - Licence: [MIT](LICENSE).
 
 ## Contributing
