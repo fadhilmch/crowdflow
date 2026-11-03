@@ -5,10 +5,18 @@ export interface Deck { id: string; code: string; token: string }
 
 const option = (text: string) => ({ id: crypto.randomUUID(), text })
 
+// One seeded identity per test worker/server. Reusing its session avoids treating the test
+// suite's setup traffic as 50 independent login attempts. Production limits stay unchanged.
+const workerTokens = new Map<string, string>()
 export async function login(request: APIRequestContext): Promise<string> {
+  const server = new URL((await request.get('/api/health')).url()).origin
+  const existing = workerTokens.get(server)
+  if (existing) return existing
   const res = await request.post('/api/users/login', { data: { username: 'demo', password: 'demo1234' } })
   expect(res.ok()).toBeTruthy()
-  return (await res.json()).token
+  const token = (await res.json()).token as string
+  workerTokens.set(server, token)
+  return token
 }
 
 export async function createDeck(request: APIRequestContext, title: string, slides: Record<string, unknown>[]): Promise<Deck> {
