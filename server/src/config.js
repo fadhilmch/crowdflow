@@ -8,7 +8,24 @@ for (const key of requiredInProduction) {
   }
 }
 
+/** CLOUDINARY_URL (cloudinary://key:secret@cloud) or the three separate variables. Empty means images stay in MongoDB. */
+function cloudinaryFromEnv() {
+  const url = process.env.CLOUDINARY_URL;
+  if (url) {
+    try {
+      const u = new URL(url);
+      if (u.protocol === 'cloudinary:') return { cloudName: u.hostname, apiKey: decodeURIComponent(u.username), apiSecret: decodeURIComponent(u.password) };
+    } catch { /* fall through to the separate variables */ }
+  }
+  return {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME ?? '',
+    apiKey: process.env.CLOUDINARY_API_KEY ?? '',
+    apiSecret: process.env.CLOUDINARY_API_SECRET ?? '',
+  };
+}
+
 export const config = {
+  cloudinary: cloudinaryFromEnv(),
   port: Number(process.env.PORT ?? 3000),
   mongoUri: process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/livepoll',
   jwtSecret: process.env.JWT_SECRET ?? 'dev-only-insecure-secret',

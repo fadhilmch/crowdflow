@@ -101,6 +101,7 @@ cd ../server && MONGODB_URI=... JWT_SECRET=... CLIENT_DIST=../client/dist npm st
    - `MONGODB_URI` - Atlas connection string
    - `JWT_SECRET` - long random string
    - `ABLY_API_KEY` - Ably root key
+   - Optional: `CLOUDINARY_URL` (`cloudinary://key:secret@cloud`, or `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`) - store uploaded slide images at Cloudinary instead of MongoDB. Leave unset to keep MongoDB. Existing images stay where they are; slide links (`/api/media/<id>`) do not change. The free plan has 25 monthly credits shared by storage, delivery and transformations, so keep an eye on usage.
    - `CLIENT_ORIGIN` - your deployment origin (or `*`)
 4. Set `VITE_LIVE_MODE=ably` so the client uses the Ably transport (mutations go over HTTP, state arrives over Ably).
 

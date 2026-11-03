@@ -10,7 +10,11 @@ const mediaSchema = new mongoose.Schema(
     publicId: { type: String, required: true, unique: true, default: newPublicId },
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     contentType: { type: String, enum: ['image/jpeg', 'image/png', 'image/webp'], required: true },
-    data: { type: Buffer, required: true },
+    // 'mongo': bytes live in `data`. 'cloudinary': bytes live at Cloudinary under `remoteId`; `bytes` is the size.
+    storage: { type: String, enum: ['mongo', 'cloudinary'], default: 'mongo' },
+    remoteId: { type: String },
+    bytes: { type: Number },
+    data: { type: Buffer, required() { return this.storage !== 'cloudinary'; } },
   },
   { timestamps: true },
 );
