@@ -11,6 +11,8 @@ import logoLight from '../assets/logo-light.svg'
 import logoDark from '../assets/logo-dark.svg'
 import ColorModeToggle from '../components/ColorModeToggle.vue'
 import JoinPanel from '../components/JoinPanel.vue'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
+import { endMessage } from '../sessionLifecycle'
 import { useColorMode } from '../colorMode'
 import { slideStepForKey } from '../presenterKeys'
 import ParticipantAvatar from '../components/ParticipantAvatar.vue'
@@ -30,6 +32,7 @@ const code = String(route.params.code)
 const error = ref('')
 const busy = ref('')
 const confirmingReset = ref(false)
+const confirmingEnd = ref(false)
 const showFullBoard = ref(false)
 
 onMounted(async () => {
@@ -42,7 +45,7 @@ onMounted(async () => {
 
 // Arrow keys and Page Up/Down change slides, as in other presentation tools.
 function onKey(e: KeyboardEvent) {
-  if (showJoin.value) return
+  if (showJoin.value || confirmingEnd.value) return
   const step = slideStepForKey(e)
   if (step === null) return
   e.preventDefault()
@@ -196,7 +199,7 @@ onBeforeUnmount(() => cancelAnimationFrame(raf))
 
 async function end() {
   await presenterAction({ type: 'presentation:end' }, 'end')
-  if (!error.value) { live.leave(); router.push({ name: 'dashboard' }) }
+  if (!error.value) { confirmingEnd.value = false; live.leave(); router.push({ name: 'dashboard' }) }
 }
 </script>
 
@@ -214,9 +217,10 @@ async function end() {
       <span v-if="live.presence !== null" class="muted presence" data-testid="presence" title="Connected to this room right now, including this screen. Not the number of people who answered.">{{ live.presence }} connected</span>
       <div class="stage-actions">
         <ColorModeToggle />
-        <button v-if="state?.slides.length && !state.ended" class="button ghost end-button" :disabled="!!busy" @click="end">{{ busy === 'end' ? 'Ending…' : 'End' }}</button>
+        <button v-if="state?.slides.length && !state.ended" class="button ghost end-button" :disabled="!!busy" @click="confirmingEnd = true">{{ busy === 'end' ? 'Ending…' : 'End' }}</button>
       </div>
     </header>
+    <ConfirmDialog v-if="confirmingEnd" title="End this presentation?" :message="endMessage(state?.session === true)" confirm-label="End presentation" :busy="busy === 'end'" :error="error" @confirm="end" @cancel="confirmingEnd = false" />
     <JoinPanel v-if="showJoin" :code="code" @close="showJoin = false" />
 
     <div class="stage-body">

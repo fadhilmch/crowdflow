@@ -14,6 +14,7 @@ test('end, archive and delete a session from the report page', async ({ browser,
   await expect(item).toContainText('active')
   await expect(item.getByRole('button', { name: 'Delete' })).toHaveCount(0) // not while running
   await item.getByRole('button', { name: 'End' }).click()
+  await page.getByRole('dialog', {name:'End this session?'}).getByRole('button', {name:'End session',exact:true}).click()
   await expect(item).toContainText('ended')
   await item.getByRole('button', { name: 'Archive' }).click()
   await expect(item).toContainText('archived')

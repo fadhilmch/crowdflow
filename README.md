@@ -254,3 +254,7 @@ Checks for the landing demo: `npm --prefix client test -- src/__tests__/landingD
 ### First-use review fixes
 
 The editor shows saved/unsaved status on phones and only warns when its current snapshot differs from the last save. New-presentation keyboard focus stays in the modal with arrow-key starting-point selection. The landing code form joins directly with shared nickname restoration, inline failure feedback and a busy state. Quiz samples allow answer changes until reveal, matching the app. Ending a presentation replaces answer/waiting controls with the terminal state. The dashboard explains fresh-session versus existing-run behavior, while landing product proof precedes compact steps/types and uses a readable editor crop on phones.
+
+### Resume and safe ending
+
+When sessions are enabled, dashboard cards list active run codes with Resume links. Resume opens the existing run without creating a new code or clearing answers; reports offer the same link for active sessions. Ending from presenter or report asks once, starts focus on Cancel and explains whether the run can resume. Separate sessions are frozen when ended; reusable deck runs can be presented again with their existing answers. Closing voting remains immediate.
