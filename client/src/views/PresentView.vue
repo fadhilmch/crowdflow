@@ -198,8 +198,11 @@ watch(
 onBeforeUnmount(() => cancelAnimationFrame(raf))
 
 async function end() {
+  const finished = state.value
+  if (!finished || busy.value) return
+  const report = { name: finished.session ? 'session-report' : 'report', params: finished.session ? { sid: String(finished.id) } : { id: String(finished.id) } }
   await presenterAction({ type: 'presentation:end' }, 'end')
-  if (!error.value) { confirmingEnd.value = false; live.leave(); router.push({ name: 'dashboard' }) }
+  if (!error.value) { confirmingEnd.value = false; live.leave(); router.push(report) }
 }
 </script>
 

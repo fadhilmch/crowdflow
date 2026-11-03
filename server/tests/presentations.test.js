@@ -13,6 +13,20 @@ async function signup(username = 'fadhil') {
 }
 
 describe('presentation routes', () => {
+  it('keeps creation intent on empty decks without storing unsaved slides or exposing it publicly', async () => {
+    const token = await signup();
+    const auth = { authorization: `Bearer ${token}` };
+    for (const creationKind of ['quiz', 'presentation', 'blank']) {
+      const created = await request(app).post('/api/presentations').set(auth).send({ title: creationKind, creationKind, slides: [] }).expect(201);
+      const loaded = await request(app).get(`/api/presentations/${created.body.data._id}`).set(auth).expect(200);
+      expect(loaded.body.data.creationKind).toBe(creationKind);
+      expect(loaded.body.data.slides).toEqual([]);
+      const publicResult = await request(app).get(`/api/presentations/code/${created.body.data.accessCode}`).expect(200);
+      expect(publicResult.body.data).not.toHaveProperty('creationKind');
+    }
+    await request(app).post('/api/presentations').set(auth).send({ title: 'Bad', creationKind: 'unknown' }).expect(400);
+  });
+
   it('creates with a 6-digit access code and joins publicly by code', async () => {
     const token = await signup();
     const created = await request(app)

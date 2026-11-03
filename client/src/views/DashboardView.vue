@@ -136,7 +136,7 @@ async function createPresentation(kind: CreationKind, title: string) {
   createError.value = ''
   try {
     // Deliberate choice + a real name: no more instant "Untitled presentation" rows.
-    const res = await api.createPresentation(auth.token, { title, slides: [] })
+    const res = await api.createPresentation(auth.token, { title, slides: [], creationKind: kind })
     router.push({ name: 'edit', params: { id: String(res.data._id) }, query: { start: kind } })
   } catch (err) {
     createError.value = err instanceof Error ? err.message : 'Could not create presentation.'

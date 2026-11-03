@@ -120,6 +120,8 @@ export const participantSchema = new mongoose.Schema(
 const presentationSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true, maxlength: 120 },
+    // Creation intent is metadata, not an unsaved slide edit. Older decks omit it.
+    creationKind: { type: String, enum: ['quiz', 'presentation', 'blank'] },
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     accessCode: { type: String, required: true, unique: true, index: true },
     location: { type: String, trim: true, maxlength: 120 },
