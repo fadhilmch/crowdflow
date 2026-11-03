@@ -6,6 +6,7 @@ import { User, syntheticUsername } from '../models/user.js';
 import { Presentation } from '../models/presentation.js';
 import { authenticate, identifyFirebase, isLegacyToken, bearerToken } from '../middleware/authenticate.js';
 import { config } from '../config.js';
+import { deleteImage } from '../lib/imageStore.js';
 import { Media } from '../models/media.js';
 import { LiveSession } from '../models/liveSession.js';
 import { firebaseEnabled, deleteFirebaseUser } from '../lib/firebase.js';
@@ -180,6 +181,9 @@ authRouter.delete('/me', authLimiter, chooseSession, validate(deleteAccountSchem
 async function removeOwnedData(ownerId) {
   const presentations = await Presentation.deleteMany({ owner: ownerId });
   await LiveSession.deleteMany({ owner: ownerId });
+  // Files held at Cloudinary go first; if one fails the request stops and can be repeated.
+  const remote = await Media.find({ owner: ownerId, storage: 'cloudinary' }).select('remoteId').lean();
+  for (const item of remote) await deleteImage(item.remoteId);
   await Media.deleteMany({ owner: ownerId });
   return presentations;
 }

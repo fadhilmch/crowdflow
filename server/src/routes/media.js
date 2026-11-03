@@ -4,6 +4,7 @@ import { Media } from '../models/media.js';
 import { Presentation } from '../models/presentation.js';
 import { LiveSession } from '../models/liveSession.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { cloudinaryEnabled, deleteImage, deliveryUrl, remoteIdFor, uploadImage, ImageStoreError } from '../lib/imageStore.js';
 import { MAX_IMAGE_BYTES, MAX_IMAGES_PER_USER, sniffImageType } from '../lib/media.js';
 
 export const mediaRouter = Router();
@@ -36,9 +37,23 @@ mediaRouter.post(
       if ((await Media.countDocuments({ owner })) >= MAX_IMAGES_PER_USER) {
         return res.status(429).json({ message: `You have reached the limit of ${MAX_IMAGES_PER_USER} uploaded images. Delete some you no longer use, then try again.`, code: 'upload_limit' });
       }
-      const media = await Media.create({ owner, contentType, data: req.body });
+      let media;
+      if (cloudinaryEnabled()) {
+        const doc = new Media({ owner, contentType, storage: 'cloudinary', bytes: req.body.length });
+        doc.remoteId = remoteIdFor(doc.publicId);
+        await uploadImage({ remoteId: doc.remoteId, buffer: req.body, contentType });
+        try {
+          media = await doc.save();
+        } catch (err) {
+          await deleteImage(doc.remoteId).catch(() => {}); // do not leave an orphan file behind
+          throw err;
+        }
+      } else {
+        media = await Media.create({ owner, contentType, data: req.body });
+      }
       return res.status(201).json({ data: { url: urlFor(media.publicId), bytes: req.body.length } });
     } catch (err) {
+      if (err instanceof ImageStoreError) return res.status(err.status).json({ message: err.message, code: 'storage_unavailable' });
       if (err.type === 'entity.too.large') return res.status(413).json({ message: 'That image is too large (600 KB maximum).' });
       return next(err);
     }
@@ -53,7 +68,7 @@ mediaRouter.get('/', authenticate, async (req, res, next) => {
     const items = await Media.aggregate([
       { $match: { owner } },
       { $sort: { createdAt: -1 } },
-      { $project: { publicId: 1, createdAt: 1, bytes: { $binarySize: '$data' } } },
+      { $project: { publicId: 1, createdAt: 1, bytes: { $ifNull: ['$bytes', { $binarySize: '$data' }] } } },
     ]);
     const decks = await Presentation.find({ owner, 'slides.design.imageUrl': { $regex: '^/api/media/' } }).select('title slides.design.imageUrl').lean();
     const data = items.map((item) => {
@@ -74,6 +89,11 @@ mediaRouter.get('/:id', async (req, res, next) => {
     if (!PUBLIC_ID.test(req.params.id)) return res.status(404).json({ message: 'Image not found' });
     const media = await Media.findOne({ publicId: req.params.id }).lean();
     if (!media) return res.status(404).json({ message: 'Image not found' });
+    if (media.storage === 'cloudinary') {
+      // Bytes live at Cloudinary's CDN. Our link stays the same, so slides never hold a provider URL.
+      res.set({ 'Cache-Control': 'public, max-age=86400', 'Cross-Origin-Resource-Policy': 'cross-origin' });
+      return res.redirect(302, deliveryUrl(media.remoteId));
+    }
     res.set({
       'Content-Type': media.contentType,
       'Cache-Control': 'public, max-age=31536000, immutable',
@@ -95,7 +115,7 @@ mediaRouter.delete('/:id', authenticate, async (req, res, next) => {
   try {
     if (!PUBLIC_ID.test(req.params.id)) return res.status(404).json({ message: 'Image not found' });
     const owner = new mongoose.Types.ObjectId(req.auth.userId);
-    const media = await Media.findOne({ publicId: req.params.id, owner }).select('_id').lean();
+    const media = await Media.findOne({ publicId: req.params.id, owner }).select('_id storage remoteId').lean();
     if (!media) return res.status(404).json({ message: 'Image not found' });
     const { decks, sessions } = await usageOf(urlFor(req.params.id));
     if (decks.length || sessions) {
@@ -108,9 +128,11 @@ mediaRouter.delete('/:id', authenticate, async (req, res, next) => {
         otherUses: others + sessions,
       });
     }
+    if (media.storage === 'cloudinary') await deleteImage(media.remoteId);
     await Media.deleteOne({ _id: media._id });
     return res.status(204).end();
   } catch (err) {
+    if (err instanceof ImageStoreError) return res.status(err.status).json({ message: err.message, code: 'storage_unavailable' });
     return next(err);
   }
 });
