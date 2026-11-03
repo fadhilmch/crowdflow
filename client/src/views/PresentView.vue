@@ -313,9 +313,12 @@ async function end() {
 
         <template v-else-if="slide.questionType === 'rating' && slide.tally">
           <div class="rating-stage" aria-live="polite">
-            <p class="rating-big">{{ slide.tally.average }}</p>
-            <p style="color:color-mix(in srgb, var(--t-ink) 72%, transparent); margin-top:0;">average of {{ slide.tally.total }} rating{{ slide.tally.total === 1 ? '' : 's' }}</p>
-            <div v-if="slide.tally.buckets" class="bucket-row">
+            <template v-if="slide.tally.total > 0">
+              <p class="rating-big">{{ slide.tally.average }}</p>
+              <p style="color:color-mix(in srgb, var(--t-ink) 72%, transparent); margin-top:0;">average of {{ slide.tally.total }} rating{{ slide.tally.total === 1 ? '' : 's' }}</p>
+            </template>
+            <p v-else style="color:color-mix(in srgb, var(--t-ink) 72%, transparent);">No ratings yet - the room average appears here as votes come in.</p>
+            <div v-if="slide.tally.total > 0 && slide.tally.buckets" class="bucket-row">
               <div v-for="(count, i) in slide.tally.buckets" :key="i" class="bucket-col">
                 <span class="bucket-count" :style="{ visibility: count ? 'visible' : 'hidden' }">{{ count }}</span>
                 <div class="bucket-track">
