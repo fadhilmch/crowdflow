@@ -190,6 +190,8 @@ cd client && npm run typecheck # vue-tsc strict typecheck
 
 Business logic (code generation, tally math, vote/upvote rules) lives in pure functions under `server/src/lib/` and is covered by unit tests independent of Express or MongoDB.
 
+UI audit: the whole app (landing, join, auth, dashboard, editor, live presenter and audience flows for all six slide types, moderation, winners podium, end session, report) was walked through on desktop and phone-width viewports in light and dark mode, with before/after screenshots. That pass fixed the phone editor toolbar order, footer clearance under the docked stage preview, the rating slide's empty state, and the dashboard card actions. Viewport checks used headless-browser device emulation, not physical phones.
+
 ## Security notes
 
 - Passwords hashed with bcrypt; JWT auth with a required secret in production.
