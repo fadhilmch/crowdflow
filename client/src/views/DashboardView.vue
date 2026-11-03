@@ -180,14 +180,18 @@ async function createPresentation(kind: CreationKind, title: string) {
         <p class="muted" style="margin:0;">
           {{ p.slideCount }} slide{{ p.slideCount === 1 ? '' : 's' }}<span v-if="p.location"> · {{ p.location }}</span>
         </p>
+        <div class="run-actions">
+          <button v-if="sessionsOn" class="button" :disabled="!p.slideCount || startingId === p._id" @click="startSession(p._id)">
+            <span v-if="startingId === p._id" class="spinner" aria-hidden="true"></span>{{ startingId === p._id ? 'Starting…' : 'Start new session' }}
+          </button>
+          <p v-if="sessionsOn" class="muted run-hint">New code and blank answers. Keeps your slides and earlier results.</p>
+          <router-link v-if="p.slideCount" :class="['button', sessionsOn ? 'ghost' : '']" :to="{ name: 'present', params: { code: p.accessCode } }">{{ sessionsOn ? 'Present existing run' : 'Present' }}</router-link>
+          <router-link v-else class="button secondary" :to="{ name: 'edit', params: { id: p._id } }">Add slides to present</router-link>
+          <p v-if="sessionsOn && p.slideCount" class="muted run-hint">Existing run uses code {{ p.accessCode }} and keeps its answers.</p>
+        </div>
         <div class="card-actions">
           <router-link class="button secondary" :to="{ name: 'edit', params: { id: p._id } }">Edit</router-link>
           <router-link class="button ghost" :to="{ name: 'report', params: { id: p._id } }">Report</router-link>
-          <router-link v-if="p.slideCount" class="button secondary" :to="{ name: 'present', params: { code: p.accessCode } }">Present</router-link>
-          <router-link v-else class="button secondary" :to="{ name: 'edit', params: { id: p._id } }">Add slides to present</router-link>
-          <button v-if="sessionsOn" class="button secondary" title="Start a new run with its own join code and blank answers" :disabled="!p.slideCount || startingId === p._id" @click="startSession(p._id)">
-            <span v-if="startingId === p._id" class="spinner" aria-hidden="true"></span>{{ startingId === p._id ? 'Starting…' : 'Start new session' }}
-          </button>
           <button class="button secondary" title="Copy the questions into a new presentation. Answers are not copied." :disabled="duplicatingId === p._id" @click="duplicate(p._id)">
             <span v-if="duplicatingId === p._id" class="spinner" aria-hidden="true"></span>{{ duplicatingId === p._id ? 'Duplicating…' : 'Duplicate' }}
           </button>
@@ -240,6 +244,8 @@ async function createPresentation(kind: CreationKind, title: string) {
 </template>
 
 <style scoped>
+.run-actions { display: grid; gap: var(--space-2); margin-top: auto; }
+.run-hint { margin: 0 0 var(--space-2); line-height: 1.5; }
 .export-menu { margin-top: var(--space-3, 12px); font-size: 0.875rem; }
 .export-menu summary { cursor: pointer; }
 .export-options { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 8px; }

@@ -25,7 +25,7 @@ test('phone poll results update, hide/reveal and survive reload; End reaches pho
   await stage.getByRole('button', { name: 'End', exact: true }).click()
   await stage.waitForURL('**/dashboard')
   await expect(phone.getByRole('heading', { name: 'Thanks for taking part!' })).toBeVisible()
-  await expect(phone.locator('.option-button').first()).toBeDisabled()
+  await expect(phone.locator('.option-button')).toHaveCount(0)
   await expect(phone.getByText(/waiting for the presenter/i)).toHaveCount(0)
   await phone.screenshot({ path: '/tmp/tier1-ended-mobile.png', fullPage: true })
   await phone.reload()
@@ -75,7 +75,7 @@ test('ending a separate session pushes a terminal state before its code is relea
   const end = await request.post(`/api/sessions/${run.id}/end`, { headers: { authorization: `Bearer ${deck.token}` } })
   expect(end.ok()).toBeTruthy()
   await expect(phone.getByRole('heading', { name: 'Thanks for taking part!' })).toBeVisible()
-  await expect(phone.locator('.option-button').first()).toBeDisabled()
+  await expect(phone.locator('.option-button')).toHaveCount(0)
   expect((await request.get(`/api/live/${run.code}/state`)).status()).toBe(410)
 })
 

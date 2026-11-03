@@ -15,8 +15,8 @@ describe('browser-only landing demo', () => {
     expect(selected).toBe(2)
     expect(demoRows('poll', selected).map(row => row.count)).toEqual([12, 8, 7])
   })
-  it('a quiz locks the first answer until reset', () => {
-    expect(demoAnswer('quiz', 0, 2, true, false)).toBe(0)
+  it('a quiz answer can change until reveal', () => {
+    expect(demoAnswer('quiz', 0, 2, true, false)).toBe(2)
     expect(demoAnswer('quiz', null, 2, true, true)).toBeNull()
   })
   it('closed voting and invalid answer indexes never change a sample', () => {

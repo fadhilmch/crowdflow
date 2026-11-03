@@ -16,6 +16,6 @@ export function demoRows(kind: DemoKind, selected: number | null) {
   return sample.options.map((label, i) => ({ label, count: counts[i], percent: Math.round(counts[i] / total * 100) }))
 }
 export function demoAnswer(kind: DemoKind, selected: number | null, index: number, open: boolean, revealed: boolean) {
-  if (!open || (kind === 'quiz' && (selected !== null || revealed)) || !Number.isInteger(index) || index < 0 || index >= DEMO[kind].options.length) return selected
+  if (!open || (kind === 'quiz' && revealed) || !Number.isInteger(index) || index < 0 || index >= DEMO[kind].options.length) return selected
   return index
 }

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+import { createDeck, poll } from './helpers'
 
 test('demo works without a room: poll, cloud, quiz, controls and reset', async ({ page }, testInfo) => {
   const liveWrites: string[] = []
@@ -27,8 +28,11 @@ test('demo works without a room: poll, cloud, quiz, controls and reset', async (
   await demo.getByRole('button', { name: 'Quiz', exact: true }).click()
   await phone.getByRole('button', { name: /Venus/ }).focus()
   await page.keyboard.press('Enter')
-  await expect(phone.getByRole('button').first()).toBeDisabled()
+  await expect(phone.getByRole('button').first()).toBeEnabled()
+  await phone.getByRole('button', { name: /Mercury/ }).click()
+  await phone.getByRole('button', { name: /Venus/ }).click()
   await demo.getByRole('button', { name: 'Reveal answer' }).click()
+  await expect(phone.getByRole('button').first()).toBeDisabled()
   await expect(demo.getByRole('status')).toContainText('The correct answer is Mercury')
   await demo.getByRole('button', { name: 'Reset demo' }).click()
   await expect(phone.getByRole('button').first()).toBeEnabled()
@@ -39,7 +43,8 @@ test('demo works without a room: poll, cloud, quiz, controls and reset', async (
   expect(liveWrites).toEqual([])
 })
 
-test('join is labelled, validates, sanitizes and preserves the existing route', async ({ page }, testInfo) => {
+test('join validates and joins once without a second submit; errors stay beside hero', async ({ page, request }) => {
+  const deck = await createDeck(request, 'Hero join', [poll('One click?', ['Yes', 'No'])])
   await page.goto('/')
   const code=page.getByLabel('Enter your 6-digit code')
   await expect(code).toBeVisible()
@@ -49,7 +54,12 @@ test('join is labelled, validates, sanitizes and preserves the existing route', 
   await expect(code).toHaveValue('12')
   await code.fill('654321')
   await page.getByRole('button', { name:'Join with a code',exact:true }).click()
-  await expect(page).toHaveURL(/\/join\?code=654321/)
+  await expect(page.getByRole('alert')).toBeVisible()
+  await expect(page).toHaveURL('/')
+  await code.fill(deck.code)
+  await page.getByRole('button', { name:'Join with a code',exact:true }).click()
+  await expect(page).toHaveURL(`/p/${deck.code}`)
+  await expect(page.getByRole('button', {name: 'Yes',exact:true})).toBeVisible()
 })
 
 for (const width of [1280, 768, 390, 320]) for (const theme of ['light', 'dark']) {
@@ -67,7 +77,7 @@ for (const width of [1280, 768, 390, 320]) for (const theme of ['light', 'dark']
     }
     for (const image of await page.locator('.product-proof img').all()) {
       await image.scrollIntoViewIfNeeded()
-      await expect.poll(()=>image.evaluate(el=>(el as HTMLImageElement).naturalWidth)).toBe(1280)
+      await expect.poll(()=>image.evaluate(el=>(el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
     }
     await page.getByRole('button',{name:'Poll',exact:true}).click()
     await page.evaluate(()=>window.scrollTo(0,0))

@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useLiveStore } from '../../stores/live'
+import { joinPresentation } from '../../live/joinPresentation'
 
 const router = useRouter()
 const code = ref('')
 const error = ref('')
+const busy = ref(false)
+const live = useLiveStore()
 
 function onInput(event: Event) {
   const input = event.target as HTMLInputElement
@@ -13,13 +17,20 @@ function onInput(event: Event) {
   error.value = ''
 }
 
-/** Hands the code to the existing join page, which does the real join. */
-function submit() {
+async function submit() {
+  if (busy.value) return
+  error.value = ''
   if (code.value.length !== 6) {
     error.value = 'Enter the 6-digit code from your presenter.'
     return
   }
-  router.push({ name: 'join', query: { code: code.value } })
+  busy.value = true
+  try {
+    await joinPresentation(live, code.value)
+    await router.push({ name: 'audience', params: { code: code.value } })
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Could not join. Check the code and try again.'
+  } finally { busy.value = false }
 }
 </script>
 
@@ -35,14 +46,15 @@ function submit() {
         maxlength="6"
         placeholder="123456"
         :value="code"
+        :disabled="busy"
         :aria-invalid="error ? 'true' : 'false'"
         :aria-describedby="error ? 'landing-code-error' : undefined"
         @input="onInput"
       />
-      <button class="button secondary-outline" type="submit">Join with a code</button>
+      <button class="button secondary-outline" type="submit" :disabled="busy"><span v-if="busy" class="spinner" aria-hidden="true"></span>{{ busy ? 'Joining…' : 'Join with a code' }}</button>
     </div>
   </form>
-  <p v-if="error" id="landing-code-error" class="error-text" role="alert">{{ error }}</p>
+  <p v-if="error" id="landing-code-error" class="error-banner" role="alert">{{ error }}</p>
   <p v-else class="note">No account needed. Nicknames for quizzes only.</p>
 </template>
 

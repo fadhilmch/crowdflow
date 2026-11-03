@@ -14,9 +14,9 @@ export interface QuestionType {
 }
 
 export const STEPS: Step[] = [
-  { title: 'Build your slides', text: 'Add questions in the editor and pick a color theme for your stage and audience screens.' },
-  { title: 'Share the code', text: 'Put the 6-digit join code on screen. People type it in at the CrowdFlow address on any phone.' },
-  { title: 'Present live', text: 'Move through slides, close voting, reveal answers and watch bars, words and scores update in real time.' },
+  { title: 'Build your slides', text: 'Mix questions and content slides. Pick a theme.' },
+  { title: 'Share the code', text: 'Show a 6-digit code or QR. People join on their phones.' },
+  { title: 'Present live', text: 'Choose the pace, close voting and reveal results.' },
 ]
 
 export const QUESTION_TYPES: QuestionType[] = [
