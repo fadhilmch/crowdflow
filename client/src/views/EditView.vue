@@ -1065,18 +1065,21 @@ function remove() {
   .editor-header {
     gap: var(--space-2);
     margin-bottom: var(--space-3);
+    justify-content: flex-start;
   }
   .editor-join, .editor-actions { display: contents; }
   /* Phone: keep a compact caption above the chip instead of dropping the explanation. */
   .join-cluster { order: 1; display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; }
   .join-hint { display: none; }
   .join-label { font-size: var(--fs-xs); font-weight: 600; color: var(--ink-3); white-space: nowrap; }
-  .editor-join > *, .editor-actions > * { order: 2; }
-  .code-chip { order: 1; }
-  .copy-link { order: 1; }
-  .editor-header .button.big { order: 1; margin-left: auto; }
-  .hist-btn { order: 1; }
-  .saved-at { flex-basis: 100%; text-align: right; order: 1; }
+  /* Row 1: join code + copy, Save pinned right. Row 2: undo/redo, Present, Delete. Status on its own line. */
+  .copy-link { order: 2; }
+  .editor-header .button.big { order: 3; margin-left: auto; }
+  .saved-at { order: 4; flex-basis: 100%; text-align: left; }
+  .hist-btn { order: 5; }
+  .editor-actions > .button.ghost:not(.hist-btn) { order: 6; }
+  .editor-actions > span.muted:not(.saved-at) { order: 6; }
+  .editor-actions > .button.danger { order: 7; margin-left: auto; }
   .editor-header .button {
     min-height: 40px;
     padding: 0 var(--space-3);
