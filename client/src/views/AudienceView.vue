@@ -369,7 +369,7 @@ async function sendRanking() {
             >{{ n }}</button>
           </div>
           <p v-if="myRatings[state.currentSlide]" class="muted">You rated {{ myRatings[state.currentSlide] }} of 10<template v-if="votingOpen"> - tap again to change it</template>.</p>
-          <p v-if="resultsVisible && slide.tally" class="muted">Room average: {{ slide.tally.average }} from {{ slide.tally.total }} rating{{ slide.tally.total === 1 ? '' : 's' }}.</p>
+          <p v-if="resultsVisible && slide.tally && slide.tally.total > 0" class="muted">Room average: {{ slide.tally.average }} from {{ slide.tally.total }} rating{{ slide.tally.total === 1 ? '' : 's' }}.</p>
           <p v-if="!votingOpen && !ended" class="voting-closed">Voting is closed - waiting for the presenter…</p>
         </template>
 
