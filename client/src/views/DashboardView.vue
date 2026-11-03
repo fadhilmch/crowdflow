@@ -190,13 +190,13 @@ async function createPresentation(kind: CreationKind, title: string) {
             <span v-if="startingId === p._id" class="spinner" aria-hidden="true"></span>{{ startingId === p._id ? 'Starting…' : 'Start new session' }}
           </button>
           <p v-if="sessionsOn" class="muted run-hint">New code and blank answers. Keeps your slides and earlier results.</p>
-          <router-link v-if="p.slideCount" :class="['button', sessionsOn ? 'ghost' : '']" :to="{ name: 'present', params: { code: p.accessCode } }">{{ sessionsOn ? 'Present existing run' : 'Present' }}</router-link>
+          <router-link v-if="p.slideCount" :class="['button', sessionsOn ? 'secondary' : '']" :to="{ name: 'present', params: { code: p.accessCode } }">{{ sessionsOn ? 'Present existing run' : 'Present' }}</router-link>
           <router-link v-else class="button secondary" :to="{ name: 'edit', params: { id: p._id } }">Add slides to present</router-link>
           <p v-if="sessionsOn && p.slideCount" class="muted run-hint">Existing run uses code {{ p.accessCode }} and keeps its answers.</p>
         </div>
         <div class="card-actions">
           <router-link class="button secondary" :to="{ name: 'edit', params: { id: p._id } }">Edit</router-link>
-          <router-link class="button ghost" :to="{ name: 'report', params: { id: p._id } }">Report</router-link>
+          <router-link class="button secondary" :to="{ name: 'report', params: { id: p._id } }">Report</router-link>
           <button class="button secondary" title="Copy the questions into a new presentation. Answers are not copied." :disabled="duplicatingId === p._id" @click="duplicate(p._id)">
             <span v-if="duplicatingId === p._id" class="spinner" aria-hidden="true"></span>{{ duplicatingId === p._id ? 'Duplicating…' : 'Duplicate' }}
           </button>
@@ -249,6 +249,7 @@ async function createPresentation(kind: CreationKind, title: string) {
 </template>
 
 <style scoped>
+.card-actions .button { flex: 1; white-space: nowrap; padding-left: var(--space-2); padding-right: var(--space-2); }
 .active-run { display: grid; gap: var(--space-2); padding-bottom: var(--space-3); border-bottom: 1px solid var(--line); }
 .run-actions { display: grid; gap: var(--space-2); margin-top: auto; }
 .run-hint { margin: 0 0 var(--space-2); line-height: 1.5; }
