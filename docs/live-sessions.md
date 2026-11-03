@@ -1,6 +1,6 @@
 # Live sessions: design and migration preview (brief 05)
 
-Status: BUILT BEHIND A FLAG (`SESSIONS_ENABLED=true`, off by default). The model, lifecycle routes, session-bound audience flow, reports, moderation, retention script and dashboard buttons exist and have tests, including browser tests (`E2E_SESSIONS=true`). The migration script has never been run against a real database, and nobody has turned the flag on in production. Turning it on is an owner decision, after a migration dry run.
+Status: BUILT BEHIND A FLAG (`SESSIONS_ENABLED=true`, off by default). The model, lifecycle routes, session-bound audience flow, reports, moderation, retention script and dashboard buttons exist and have tests, including browser tests (`E2E_SESSIONS=true`). The migration script has never been run against a real database, and the production flag state has not been verified. Turning it on is an owner decision, after a migration dry run.
 
 ## Problem
 A deck, its answers, its participants and its join code are one document. Running a deck again means resetting it, and the earlier run's results are gone.

@@ -15,4 +15,4 @@ Checked on master 043dfa3 by reading the code and tests, then running the server
 | 9 | Moderation | `lib/moderation.js`, `docs/moderation.md`; `moderation`, `sessionModeration` tests | |
 | 10 | Templates, duplication, recoverable editing | `lib/templates.js`; `duplicateTemplates` test; `editor-undo` browser spec | |
 
-One thing the probe noted: after a session ends its code is released, so a late answer or a page reload on that code gets `404 No presentation with that code` instead of an "ended" message. Phones that are connected when it ends get the terminal state (covered by `session-basics`). This is a possible follow-up, not changed here.
+One thing the probe noted: after a session ends its code is released, so a late answer or a page reload on that code gets `404 No presentation with that code` instead of an "ended" message. Phones that are connected when it ends get the terminal state (covered by `session-basics`). This was resolved by the later ended-session fix (PR86): reopening or joining an ended code now reports that the session ended. The audit above remains historical, not a new hosted validation.
