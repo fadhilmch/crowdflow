@@ -1,126 +1,105 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { PREVIEW } from '../../landing/content'
+import { computed, ref } from 'vue'
+import { DEMO, DEMO_KINDS, QUIZ_CORRECT, demoAnswer, demoRows, type DemoKind } from '../../landing/demo'
 
-/** Live sample poll: votes tick up on a slow loop and the bars ease to the new values,
-    so the hero demos the product instead of describing it. Frozen for reduced motion. */
-const votes = ref(PREVIEW.options.map((o) => o.votes))
-const root = ref<HTMLElement | null>(null)
-
-const total = computed(() => votes.value.reduce((sum, v) => sum + v, 0))
-const rows = computed(() =>
-  PREVIEW.options.map((o, i) => ({ ...o, votes: votes.value[i], pct: Math.round((votes.value[i] / total.value) * 100) })),
-)
-
-const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
-let timer: number | undefined
-let visible = true
-let io: IntersectionObserver | null = null
-
-onMounted(() => {
-  if (reduced.matches) return
-  // Only run the loop while the hero is on screen and the tab is visible.
-  if (typeof IntersectionObserver !== 'undefined' && root.value) {
-    io = new IntersectionObserver((entries) => {
-      visible = entries[0]?.isIntersecting ?? true
-    })
-    io.observe(root.value)
-  }
-  timer = window.setInterval(() => {
-    if (!visible || document.hidden) return
-    const i = Math.floor(Math.random() * votes.value.length)
-    votes.value[i] += 1
-  }, 2400)
+const kind = ref<DemoKind>('poll')
+const selected = ref<number | null>(null)
+const open = ref(true)
+const shown = ref(true)
+const revealed = ref(false)
+const rows = computed(() => demoRows(kind.value, selected.value))
+const sample = computed(() => DEMO[kind.value])
+const total = computed(() => rows.value.reduce((sum, row) => sum + row.count, 0))
+const message = computed(() => {
+  if (kind.value === 'quiz' && revealed.value) return selected.value === null ? 'Answer revealed: Mercury.' : selected.value === QUIZ_CORRECT ? 'Correct! Mercury is closest to the Sun.' : 'The correct answer is Mercury. Try again with Reset demo.'
+  if (!open.value) return 'Voting is closed in this demo.'
+  if (selected.value !== null) return kind.value === 'quiz' ? 'Answer locked in. Reveal it on the stage.' : 'Your answer is on the stage. Try another option.'
+  return kind.value === 'word-cloud' ? 'Tap a word to grow it on the stage.' : 'Tap an answer on the phone.'
 })
-
-onBeforeUnmount(() => {
-  window.clearInterval(timer)
-  io?.disconnect()
-})
+function reset(next: DemoKind = kind.value) {
+  kind.value = next; selected.value = null; open.value = true; shown.value = true; revealed.value = false
+}
+function answer(index: number) {
+  selected.value = demoAnswer(kind.value, selected.value, index, open.value, revealed.value)
+}
 </script>
 
 <template>
-  <div ref="root" class="preview" role="img" :aria-label="`Sample poll: ${PREVIEW.question}`">
-    <div class="stage">
-      <div class="top">
-        <span class="live"><i></i>Live</span>
-        <span class="chip">JOIN {{ PREVIEW.code }}</span>
-        <span class="count">{{ total }} voting</span>
-      </div>
-      <p class="q">{{ PREVIEW.question }}</p>
-      <div v-for="(r, i) in rows" :key="r.label" class="bar">
-        <div class="bar-label">
-          <span>{{ r.label }}</span>
-          <span>{{ r.votes }} · {{ r.pct }}%</span>
-        </div>
-        <div class="track">
-          <div class="fill" :style="{ width: r.pct + '%', background: r.color, animationDelay: i * 90 + 'ms' }"></div>
-        </div>
-      </div>
+  <section class="preview" aria-label="Interactive product demo" data-ui>
+    <div class="demo-heading"><b>Try a demo</b><button type="button" class="reset" @click="reset()">Reset demo</button></div>
+    <p class="demo-note">Sample answers only. No live room or account.</p>
+    <div class="switcher" role="group" aria-label="Demo question type">
+      <button v-for="item in DEMO_KINDS" :key="item.id" type="button" :aria-pressed="kind === item.id" @click="reset(item.id)">{{ item.label }}</button>
     </div>
-    <div class="phone">
-      <span class="live"><i></i>CrowdFlow</span>
-      <p class="pq">{{ PREVIEW.question }}</p>
-      <div v-for="(r, i) in rows" :key="r.label" class="opt" :class="{ sel: i === 0 }">
-        <i></i>{{ r.label }}
-      </div>
+    <div class="paired">
+      <section class="stage" aria-label="Demo stage">
+        <p class="surface-label">On the big screen <span>{{ total }} sample answers</span></p>
+        <h2>{{ sample.question }}</h2>
+        <div class="results">
+          <p v-if="!shown" class="waiting">Results hidden. The audience can still answer.</p>
+          <div v-else-if="kind === 'word-cloud'" class="cloud" aria-label="Sample word cloud">
+            <span v-for="(row, i) in rows" :key="row.label" :class="`tone-${i}`" :style="{ fontSize: `${1 + row.count * 0.18}rem` }">{{ row.label }}<small>{{ row.count }}</small></span>
+          </div>
+          <template v-else>
+            <div v-for="(row, i) in rows" :key="row.label" class="bar">
+              <div class="bar-label"><span>{{ row.label }}<b v-if="kind === 'quiz' && revealed && i === QUIZ_CORRECT"> · Correct</b></span><span>{{ row.count }} · {{ row.percent }}%</span></div>
+              <div class="track"><div class="fill" :class="`tone-${i}`" :style="{ width: row.percent + '%' }"></div></div>
+            </div>
+          </template>
+        </div>
+        <div class="demo-controls" aria-label="Demo presenter controls">
+          <button v-if="kind === 'quiz'" type="button" :disabled="revealed" @click="revealed = true; open = false; shown = true">{{ revealed ? 'Answer revealed' : 'Reveal answer' }}</button>
+          <button v-else type="button" :aria-pressed="!open" @click="open = !open">{{ open ? 'Close voting' : 'Open voting' }}</button>
+          <button type="button" :aria-pressed="!shown" @click="shown = !shown">{{ shown ? 'Hide results' : 'Show results' }}</button>
+        </div>
+      </section>
+      <section class="phone" aria-label="Demo audience phone">
+        <p class="surface-label"><img src="../../assets/logo-mark.svg" alt="" /> On your phone</p>
+        <p class="pq">{{ sample.question }}</p>
+        <button v-for="(row, i) in rows" :key="row.label" type="button" class="opt" :class="{ sel: selected === i }" :aria-pressed="selected === i" :disabled="!open || (kind === 'quiz' && selected !== null)" @click="answer(i)"><span aria-hidden="true">{{ selected === i ? '●' : '○' }}</span>{{ row.label }}</button>
+      </section>
     </div>
-  </div>
+    <p class="feedback" role="status">{{ message }}</p>
+  </section>
 </template>
 
 <style scoped>
-.preview { position: relative; height: 430px; }
-.stage {
-  position: absolute; inset: 0 40px 40px 0; padding: 22px 175px 22px 26px;
-  background: #111113; color: #edeef0; border-radius: 20px;
-  box-shadow: 0 24px 60px rgb(28 32 36 / 0.25);
-}
-.top { display: flex; align-items: center; gap: var(--space-2); margin-bottom: 14px; font-size: 0.8rem; color: #9a9ca3; white-space: nowrap; }
-.live { display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: #9a9ca3; }
-.live i { width: 8px; height: 8px; border-radius: 50%; background: var(--signal); animation: live-pulse 2s var(--ease) infinite; }
-@keyframes live-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgb(233 61 130 / 0.45); }
-  55% { box-shadow: 0 0 0 7px rgb(233 61 130 / 0); }
-}
-.chip {
-  padding: 5px var(--space-3); border-radius: var(--radius-sm); background: #2b2b36; color: #b8baf8;
-  font-weight: 800; letter-spacing: 0.14em; white-space: nowrap;
-}
-.q { margin: 0 0 22px; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.25; }
-.bar { margin-bottom: 14px; }
-.bar-label { display: flex; justify-content: space-between; gap: var(--space-2); margin-bottom: 6px; font-size: var(--fs-sm); color: #d6d7db; }
-.track { height: 14px; border-radius: 7px; background: rgb(255 255 255 / 0.13); overflow: hidden; }
-.fill {
-  height: 100%; border-radius: 7px; transform-origin: left;
-  animation: grow var(--dur-bars) var(--ease) both;
-  transition: width var(--dur-bars) var(--ease);
-}
-@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-.phone {
-  position: absolute; right: 0; bottom: 0; width: 190px; height: 340px; padding: 18px 14px;
-  background: #1a1a1f; color: #edeef0; border: 6px solid #2a2a31; border-radius: 30px;
-  box-shadow: 0 20px 50px rgb(28 32 36 / 0.35);
-}
-.pq { margin: 10px 0 var(--space-3); font-size: 0.95rem; font-weight: 800; }
-.opt {
-  display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); padding: 9px 11px;
-  border-radius: var(--radius-md); background: #26262d; font-size: var(--fs-xs);
-}
-.opt i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #7878d8; flex-shrink: 0; }
-.opt.sel { background: #2b2b44; outline: 1.5px solid var(--lead); }
-.opt.sel i { background: var(--lead); }
-
-@media (max-width: 760px) {
-  .preview { height: 360px; }
-  .stage { inset: 0 30px 50px 0; padding: var(--space-4) 138px var(--space-4) var(--space-4); }
-  .chip, .count { display: none; }
-  .q { margin-bottom: 14px; font-size: 1.1rem; }
-  .phone { width: 128px; height: 250px; padding: 14px 10px; border-radius: 26px; }
-  .pq { font-size: 0.72rem; }
-  .opt { gap: 5px; padding: 6px 7px; font-size: 0.64rem; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .fill { animation: none; transition: none; }
-  .live i { animation: none; }
-}
+.preview { min-width: 0; }
+.demo-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.demo-heading b { font-size: var(--fs-lg); }
+.reset { padding: var(--space-2); border: 0; background: none; color: var(--lead); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
+.demo-note { margin: var(--space-1) 0 var(--space-4); color: var(--ink-2); font-size: var(--fs-sm); }
+.switcher { display: flex; gap: var(--space-1); margin-bottom: var(--space-4); padding: var(--space-1); background: var(--line); border-radius: var(--radius-lg); }
+.switcher button { flex: 1; border: 0; border-radius: var(--radius-sm); padding: var(--space-3) var(--space-2); background: transparent; color: var(--ink-2); font: inherit; font-size: var(--fs-sm); font-weight: 700; cursor: pointer; }
+.switcher button[aria-pressed='true'] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+.paired { display: grid; grid-template-columns: minmax(0, 1fr) 176px; align-items: start; gap: var(--space-3); }
+.stage { min-width: 0; background: var(--inverse); color: var(--inverse-ink); padding: var(--space-5); border-radius: var(--radius); box-shadow: var(--shadow); }
+.surface-label { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-4); font-size: var(--fs-xs); font-weight: 600; }
+.stage .surface-label { color: var(--inverse-muted); }
+.surface-label span { font-weight: 400; }
+.stage h2 { font-size: var(--fs-lg); line-height: 1.4; margin: 0 0 var(--space-5); }
+.results { min-height: 150px; }
+.bar { margin-bottom: var(--space-4); }
+.bar-label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1); margin-bottom: var(--space-2); font-size: var(--fs-xs); }
+.bar-label > span:last-child { font-variant-numeric: tabular-nums; color: var(--inverse-muted); white-space: nowrap; }
+.track { height: 12px; border-radius: var(--radius-pill); overflow: hidden; background: var(--inverse-line); }
+.fill { height: 100%; border-radius: inherit; transition: width var(--dur-bars) var(--ease); }
+.tone-0 { background: var(--lead); }.tone-1 { background: var(--signal); }.tone-2 { background: var(--warmth); }
+.cloud { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--space-4) 0; }
+.cloud span { background: none; font-weight: 800; }.cloud .tone-0 { color: var(--inverse-ink); }.cloud .tone-1 { color: var(--inverse-muted); }.cloud .tone-2 { color: var(--warmth); }
+.cloud small { display: inline-block; margin-left: var(--space-1); font-size: var(--fs-xs); }
+.waiting { font-size: var(--fs-base); line-height: 1.6; color: var(--inverse-muted); }
+.demo-controls { display: flex; flex-wrap: wrap; gap: var(--space-2); border-top: 1px solid var(--inverse-line); padding-top: var(--space-4); }
+.demo-controls button { min-height: 44px; border: 1px solid var(--inverse-line); border-radius: var(--radius-sm); background: transparent; color: var(--inverse-ink); font: inherit; font-size: var(--fs-xs); padding: var(--space-2); cursor: pointer; }
+.phone { padding: var(--space-4) var(--space-3); border: 3px solid var(--line); border-radius: 24px; background: var(--card); box-shadow: var(--shadow); }
+.phone img { width: 18px; height: 18px; }.phone .surface-label { color: var(--ink-2); }
+.pq { margin: 0 0 var(--space-4); font-size: var(--fs-sm); font-weight: 800; line-height: 1.4; }
+.opt { display: flex; width: 100%; text-align: left; align-items: center; gap: var(--space-2); min-height: 44px; margin-bottom: var(--space-2); padding: var(--space-2); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper); color: var(--ink); font: inherit; font-size: var(--fs-xs); cursor: pointer; }
+.opt.sel { border-color: var(--lead); background: var(--lead-soft); }.opt span { color: var(--lead); }
+button:disabled { cursor: default; opacity: 0.65; }button:focus-visible { outline: 3px solid var(--lead); outline-offset: 3px; }
+.feedback { min-height: 2.8em; margin: var(--space-3) 0 0; color: var(--ink-2); font-size: var(--fs-sm); line-height: 1.4; }
+@media (max-width: 1080px) and (min-width: 901px) { .paired { grid-template-columns: 1fr; }.phone { border-radius: var(--radius); }.phone .opt { display: inline-flex; width: auto; margin-right: var(--space-2); } }
+@media (max-width: 440px) { .paired { grid-template-columns: minmax(0, 1fr) 144px; gap: var(--space-2); }.stage { padding: var(--space-4) var(--space-3); }.stage h2 { font-size: var(--fs-base); }.phone { padding: var(--space-4) var(--space-2); }.phone .surface-label { gap: var(--space-1); font-size: 0.72rem; }.bar-label { font-size: 0.72rem; }.stage .surface-label span { display: block; }.demo-controls { gap: var(--space-1); }.demo-controls button { font-size: 0.72rem; }.results { min-height: 180px; } }
+@media (max-width: 359px) { .paired { grid-template-columns: 1fr; }.results { min-height: 150px; }.phone { border-radius: var(--radius); }.stage h2 { font-size: var(--fs-md); } }
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
 </style>

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { readableOn } from '../themes'
 import { useAuthStore } from '../stores/auth'
-import { STEPS, QUESTION_TYPES, FEATURES } from '../landing/content'
+import { STEPS, QUESTION_TYPES } from '../landing/content'
 import JoinWithCode from '../components/landing/JoinWithCode.vue'
 import SamplePreview from '../components/landing/SamplePreview.vue'
 import { vReveal } from '../landing/reveal'
@@ -17,10 +17,9 @@ const createTarget = computed(() => (auth.isLoggedIn ? { name: 'dashboard' } : {
     <section class="hero-grid">
       <div class="copy">
         <p class="eyebrow">Interactive presentations for any room</p>
-        <h1>Ask the room. <em>Watch the answers flow in.</em></h1>
+        <h1>Ask the room. <em>See it respond.</em></h1>
         <p class="lead">
-          Build a short presentation, share a 6-digit code, and your audience answers from their phones. No sign-up for
-          them. Results move on the big screen as people vote.
+          Build interactive slides. Share a code. Let everyone answer from their phones.
         </p>
         <div class="cta">
           <RouterLink class="button big block" :to="createTarget">Create a presentation</RouterLink>
@@ -56,15 +55,18 @@ const createTarget = computed(() => (auth.isLoggedIn ? { name: 'dashboard' } : {
       </ul>
     </section>
 
-    <section v-reveal class="band" aria-labelledby="features-title">
-      <h2 id="features-title">Made for live rooms</h2>
-      <p class="band-lead">Simple for the audience, in control for the presenter.</p>
-      <ul class="grid two">
-        <li v-for="f in FEATURES" :key="f.title" class="card">
-          <h3>{{ f.title }}</h3>
-          <p>{{ f.text }}</p>
-        </li>
-      </ul>
+    <section v-reveal class="band product-proof" aria-labelledby="features-title">
+      <h2 id="features-title">Your slides. Your pace.</h2>
+      <p class="band-lead">Build beside a stage preview, then decide what the room sees.</p>
+      <figure>
+        <a href="/landing/editor.webp" target="_blank" rel="noopener" aria-label="Open the editor screenshot at full size"><img src="/landing/editor.webp" alt="CrowdFlow editor with a slide list, question and answer fields, theme selection and a stage preview" loading="lazy" width="1280" height="800" /></a>
+        <figcaption><b>Build your presentation</b> Add question and content slides, choose a theme, and see your changes beside the editor.</figcaption>
+      </figure>
+      <figure>
+        <a href="/landing/presenter.webp" target="_blank" rel="noopener" aria-label="Open the presenter screenshot at full size"><img src="/landing/presenter.webp" alt="CrowdFlow presenter screen showing poll results, the join code, slide navigation, voting and result visibility controls" loading="lazy" width="1280" height="800" /></a>
+        <figcaption><b>Keep the room with you</b> Move through slides, close voting or hide results while people think.</figcaption>
+      </figure>
+      <p class="capture-note">Actual app screens with a local sample presentation. Tap either image to open it at full size.</p>
     </section>
 
     <section v-reveal class="final">
@@ -80,7 +82,7 @@ const createTarget = computed(() => (auth.isLoggedIn ? { name: 'dashboard' } : {
 
 <style scoped>
 .landing { max-width: 1120px; margin: 0 auto; padding: 0 var(--space-5) var(--space-7); }
-.hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: var(--space-7); align-items: center; padding: 72px 0 64px; }
+.hero-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: var(--space-6); align-items: center; padding: 48px 0; }
 .eyebrow { margin: 0 0 14px; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--lead); }
 h1 { margin: 0 0 18px; font-size: clamp(2.3rem, 5vw, 3.4rem); line-height: 1.05; letter-spacing: -0.03em; font-weight: 800; }
 h1 em {
@@ -108,6 +110,11 @@ h1 em {
 .tile { display: grid; place-items: center; flex-shrink: 0; width: 38px; height: 38px; border-radius: 11px; color: var(--on-accent); font-weight: 800; }
 .type b { display: block; }
 .type-text { display: block; font-size: var(--fs-sm); color: var(--ink-2); }
+.product-proof figure { margin: 0 0 var(--space-6); }
+.product-proof img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.product-proof figcaption { margin-top: var(--space-3); max-width: 700px; color: var(--ink-2); font-size: var(--fs-base); line-height: 1.6; }
+.product-proof figcaption b { display: block; color: var(--ink); font-size: var(--fs-md); }
+.capture-note { color: var(--ink-2); font-size: var(--fs-sm); }
 .final {
   margin: var(--space-2) 0 var(--space-5); padding: var(--space-7) var(--space-6); text-align: center;
   background: var(--inverse); color: var(--inverse-ink); border-radius: 24px;
@@ -158,9 +165,12 @@ h1 em {
   .grid .card:hover, .type:hover { transform: none; }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .landing { padding: 0 20px var(--space-6); }
-  .hero-grid { grid-template-columns: 1fr; gap: var(--space-6); padding: 36px 0 40px; }
+  .hero-grid { grid-template-columns: 1fr; gap: var(--space-5); padding: 24px 0 32px; }
+  h1 { font-size: 2.2rem; }
+  .eyebrow { margin-bottom: var(--space-2); font-size: 0.72rem; letter-spacing: 0.02em; }
+  .lead { margin-bottom: var(--space-4); }
   .lead { font-size: 1.02rem; }
   .cta { max-width: none; }
   .band { padding: 40px 0; }

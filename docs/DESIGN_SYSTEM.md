@@ -68,3 +68,11 @@ The image picker (`ImageUploadField.vue` and `ImagePickerDialog.vue`) is the ref
 ## Checking a change
 
 Run the app (`npm run dev:memory` in `server/` with the client built), then compare the landing, dashboard, editor, presenter and audience views in both modes before and after your change.
+
+## Landing demos and product captures
+
+- Keep product demos explicitly labelled as sample-only and separate from joining. No fictitious live room, join code, audience count or automatic votes. Counts must add up.
+- The landing poll, word cloud and quiz use `client/src/landing/demo.ts` for their sample data and answer rules. Components hold only ephemeral UI state. Switching question type and Reset demo clear the visitor's answer and presenter controls.
+- Demo choices are native buttons with pressed states, visible focus and at least 44px hit targets. Quiz choices lock until reset. Closing voting disables the phone; hiding results does not disable voting. Keep status feedback outside the stage so it remains available when results are hidden.
+- Use paired stage/phone composition where both remain readable; stack on very narrow phones. A phone hero must get to the interactive proof before long explanatory sections.
+- Product screenshots are real seeded local app captures, not decorative grey-bar mockups or private user decks. Captions explain the task. Images have descriptive alt text, fixed aspect ratio and a full-size link for phone readers. The screenshots are light-mode Candy even when the surrounding page is dark; preserve the actual product pixels.

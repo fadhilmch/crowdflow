@@ -1,0 +1,81 @@
+import { expect, test } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
+
+test('demo works without a room: poll, cloud, quiz, controls and reset', async ({ page }) => {
+  const liveWrites: string[] = []
+  page.on('request', r => { if (r.method() !== 'GET' && /\/api\/(live|presentations)/.test(r.url())) liveWrites.push(r.url()) })
+  await page.goto('/')
+  const demo = page.getByRole('region', { name: 'Interactive product demo' })
+  const phone = demo.getByRole('region', { name: 'Demo audience phone' })
+  const stage = demo.getByRole('region', { name: 'Demo stage' })
+  await expect(demo).toContainText('Sample answers only. No live room or account.')
+  await phone.getByRole('button', { name: /Product quality/ }).click()
+  await expect(stage).toContainText('27 sample answers')
+  await expect(stage).toContainText('13 · 48%')
+  await phone.getByRole('button', { name: /New features/ }).click()
+  await expect(stage).toContainText('27 sample answers')
+  await demo.getByRole('button', { name: 'Close voting', exact: true }).click()
+  await expect(phone.getByRole('button').first()).toBeDisabled()
+  await demo.getByRole('button', { name: 'Open voting', exact: true }).click()
+  await demo.getByRole('button', { name: 'Hide results' }).click()
+  await expect(stage).toContainText('Results hidden')
+  await demo.getByRole('button', { name: 'Show results' }).click()
+  await demo.getByRole('button', { name: 'Word cloud', exact: true }).click()
+  await phone.getByRole('button', { name: /Curious/ }).click()
+  await expect(stage.locator('.cloud')).toContainText('Curious5')
+  await demo.screenshot({path:'/downloads/crowdflow-cloud-demo.png'})
+  await demo.getByRole('button', { name: 'Quiz', exact: true }).click()
+  await phone.getByRole('button', { name: /Venus/ }).focus()
+  await page.keyboard.press('Enter')
+  await expect(phone.getByRole('button').first()).toBeDisabled()
+  await demo.getByRole('button', { name: 'Reveal answer' }).click()
+  await expect(demo.getByRole('status')).toContainText('The correct answer is Mercury')
+  await demo.getByRole('button', { name: 'Reset demo' }).click()
+  await expect(phone.getByRole('button').first()).toBeEnabled()
+  await phone.getByRole('button', { name: /Mercury/ }).click()
+  await demo.getByRole('button', { name: 'Reveal answer' }).click()
+  await expect(demo.getByRole('status')).toContainText('Correct!')
+  await demo.screenshot({path:'/downloads/crowdflow-quiz-demo.png'})
+  expect(liveWrites).toEqual([])
+})
+
+test('join is labelled, validates, sanitizes and preserves the existing route', async ({ page }) => {
+  await page.goto('/')
+  const code=page.getByLabel('Enter your 6-digit code')
+  await expect(code).toBeVisible()
+  await page.getByRole('button', { name:'Join with a code',exact:true }).click()
+  await expect(page.getByRole('alert')).toContainText('Enter the 6-digit code')
+  await code.fill('abc12')
+  await expect(code).toHaveValue('12')
+  await code.fill('654321')
+  await page.getByRole('button', { name:'Join with a code',exact:true }).click()
+  await expect(page).toHaveURL(/\/join\?code=654321/)
+})
+
+for (const width of [1280, 768, 390, 320]) for (const theme of ['light', 'dark']) {
+  test(`landing ${width}px ${theme}: no overflow, accessible demo and real images`, async ({ page }) => {
+    await page.setViewportSize({width,height:844})
+    await page.emulateMedia({reducedMotion:'reduce'})
+    await page.addInitScript(theme=>localStorage.setItem('crowdflow.colorMode',theme),theme)
+    await page.goto('/')
+    await expect(page.locator('h1')).toBeVisible()
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(0)
+    for (const kind of ['Poll','Word cloud','Quiz']) {
+      await page.getByRole('button',{name:kind,exact:true}).click()
+      const result=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze()
+      expect(result.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))).toEqual([])
+    }
+    for (const image of await page.locator('.product-proof img').all()) {
+      await image.scrollIntoViewIfNeeded()
+      await expect.poll(()=>image.evaluate(el=>(el as HTMLImageElement).naturalWidth)).toBe(1280)
+    }
+    await page.getByRole('button',{name:'Poll',exact:true}).click()
+    await page.evaluate(()=>window.scrollTo(0,0))
+    await page.screenshot({path:`/downloads/crowdflow-after-${width}-${theme}.png`})
+    const demo=page.getByRole('region',{name:'Interactive product demo'})
+    await demo.scrollIntoViewIfNeeded()
+    await page.screenshot({path:`/downloads/crowdflow-demo-${width}-${theme}.png`})
+    await page.locator('.product-proof').scrollIntoViewIfNeeded()
+    await page.screenshot({path:`/downloads/crowdflow-proof-${width}-${theme}.png`})
+  })
+}

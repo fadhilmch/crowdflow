@@ -13,11 +13,6 @@ export interface QuestionType {
   color: string
 }
 
-export interface Feature {
-  title: string
-  text: string
-}
-
 export const STEPS: Step[] = [
   { title: 'Build your slides', text: 'Add questions in the editor and pick a color theme for your stage and audience screens.' },
   { title: 'Share the code', text: 'Put the 6-digit join code on screen. People type it in at the CrowdFlow address on any phone.' },
@@ -32,19 +27,3 @@ export const QUESTION_TYPES: QuestionType[] = [
   { name: 'Ranking', text: 'Tap options in order', glyph: '≡', color: '#7878e8' },
   { name: 'Open question', text: 'Answers people can upvote', glyph: '…', color: '#e5484d' },
 ]
-
-export const FEATURES: Feature[] = [
-  { title: 'Presenter controls', text: 'Close voting, hide results while people think, reset a question. Only the presenter changes slides.' },
-  { title: 'Open source', text: 'Self-host it with Node and MongoDB. The code is open source.' },
-]
-
-/** Illustrative sample for the hero preview; not real data. */
-export const PREVIEW = {
-  code: '482 913',
-  question: 'What should we focus on next quarter?',
-  options: [
-    { label: 'Product quality', votes: 12, color: '#7878e8' },
-    { label: 'New features', votes: 8, color: '#f12f83' },
-    { label: 'Performance', votes: 6, color: '#ffb224' },
-  ],
-}
