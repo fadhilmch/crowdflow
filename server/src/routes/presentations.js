@@ -83,6 +83,7 @@ const confirmRemoveSchema = z.object({
 });
 
 const createSchema = z.object({
+  creationKind: z.enum(['quiz', 'presentation', 'blank']).optional(),
   title: z.string().trim().min(1).max(120),
   location: z.string().trim().max(120).optional(),
   theme: z.enum(['iris', 'apricot', 'plum', 'cobalt']).optional(),

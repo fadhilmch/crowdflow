@@ -55,6 +55,7 @@ interface LoadedSlide {
 }
 
 interface LoadedPresentation {
+  creationKind?: import('../editor/creationTemplates').CreationKind
   _id: string
   title: string
   location?: string
@@ -185,7 +186,7 @@ function applyLoaded(p: LoadedPresentation) {
   savedSnapshot = snapshot()
   if (!slides.value.length) {
     // Fresh decks open with the starter for the chosen creation kind; Blank starts empty.
-    const starter = creationTemplate(startKind ?? 'presentation').starterSlide
+    const starter = creationTemplate(p.creationKind ?? startKind ?? 'presentation').starterSlide
     if (starter) addSlide(starter)
   }
   dirty.value = snapshot() !== savedSnapshot

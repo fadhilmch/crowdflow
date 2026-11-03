@@ -24,7 +24,7 @@ test('phone poll results update, hide/reveal and survive reload; End reaches pho
   await stage.goto(`/present/${deck.code}`)
   await stage.getByRole('button', { name: 'End', exact: true }).click()
   await stage.getByRole('dialog', {name:'End this presentation?'}).getByRole('button', {name:'End presentation',exact:true}).click()
-  await stage.waitForURL('**/dashboard')
+  await stage.waitForURL(`**/report/${deck.id}`)
   await expect(phone.getByRole('heading', { name: 'Thanks for taking part!' })).toBeVisible()
   await expect(phone.locator('.option-button')).toHaveCount(0)
   await expect(phone.getByText(/waiting for the presenter/i)).toHaveCount(0)
