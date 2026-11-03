@@ -3,15 +3,19 @@ name: CI
 on:
   pull_request:
     paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
+      # Verified-inert docs only: no code, tests, or tooling read these
+      # (checked the repo for markdown references before adding this).
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'docs/**/*.md'
   push:
     # Feature-branch pushes no longer spend runner minutes by themselves;
     # PRs and master still run the full checks.
     branches: [master]
     paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'docs/**/*.md'
 
 # Cancel superseded runs on the same branch/PR so only the latest push uses runner time.
 concurrency:
