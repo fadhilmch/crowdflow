@@ -59,7 +59,7 @@ async function submit() {
 </template>
 
 <style scoped>
-.join-label { display: block; margin-bottom: var(--space-2); font-size: var(--fs-sm); font-weight: 700; }
+.join-label { color: var(--ink); display: block; margin-bottom: var(--space-2); font-size: var(--fs-sm); font-weight: 700; }
 .join-row {
   display: flex; gap: 10px; padding: var(--space-2); background: var(--card);
   border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
