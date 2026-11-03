@@ -486,3 +486,8 @@ input:focus, select:focus, textarea:focus {
 
 /* Explicit spacing survives inline-template whitespace normalization. */
 .site-footer { gap: 0.5rem 1rem; }
+
+/* Keep the footer clear of the editor's fixed stage-preview dock on phone. */
+@media (max-width: 1023px) {
+  .site-footer { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+}
