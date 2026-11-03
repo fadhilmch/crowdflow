@@ -23,6 +23,7 @@ test('phone poll results update, hide/reveal and survive reload; End reaches pho
   await stage.addInitScript((token) => { localStorage.setItem('livepoll.token', token); localStorage.setItem('livepoll.user', JSON.stringify({ id: 'e2e', username: 'e2e' })) }, deck.token)
   await stage.goto(`/present/${deck.code}`)
   await stage.getByRole('button', { name: 'End', exact: true }).click()
+  await stage.getByRole('dialog', {name:'End this presentation?'}).getByRole('button', {name:'End presentation',exact:true}).click()
   await stage.waitForURL('**/dashboard')
   await expect(phone.getByRole('heading', { name: 'Thanks for taking part!' })).toBeVisible()
   await expect(phone.locator('.option-button')).toHaveCount(0)

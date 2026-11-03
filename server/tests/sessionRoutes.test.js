@@ -94,3 +94,27 @@ describe('session csv export', () => {
     expect((await as(other, request(app).get(`/api/presentations/${run.id}/export.csv?kind=summary`))).status).toBe(404);
   });
 });
+
+describe('owner active-session dashboard metadata', () => {
+  it('lists active runs without answers and hides other owners and ended runs', async () => {
+    const created = (await as(owner, request(app).post('/api/presentations')).send({ title: 'Resume deck', slides: [{ questionType: 'multiple-choice', question: 'Resume?', options: ['a', 'b'] }] })).body.data;
+    const run = (await as(owner, request(app).post(`/api/presentations/${created._id}/sessions`))).body.data;
+    const { applyLiveActionByCode } = await import('../src/lib/live.js');
+    await applyLiveActionByCode(run.code, { type: 'vote:cast', slideIndex: 0, optionIndex: 0, participantId: 'p-private-voter' });
+    const list = (await as(owner, request(app).get('/api/presentations'))).body.data;
+    const row = list.find(d => d._id === created._id);
+    expect(row.activeSessions).toHaveLength(1);
+    expect(row.activeSessions[0]).toMatchObject({ id: run.id, code: run.code });
+    expect(Object.keys(row.activeSessions[0]).sort()).toEqual(['code', 'id', 'startedAt']);
+    expect(JSON.stringify(list)).not.toContain('p-private-voter');
+    const otherList = (await as(other, request(app).get('/api/presentations'))).body;
+    expect(JSON.stringify(otherList)).not.toContain(run.code);
+    const state = (await as(owner, request(app).get(`/api/sessions/${run.id}/state`))).body.data;
+    expect(state.session).toBe(true);
+    const deckState = (await request(app).get(`/api/live/${created.accessCode}/state`)).body.data;
+    expect(deckState.session).toBeUndefined();
+    await as(owner, request(app).post(`/api/sessions/${run.id}/end`));
+    const ended = (await as(owner, request(app).get('/api/presentations'))).body.data.find(d => d._id === created._id);
+    expect(ended.activeSessions).toEqual([]);
+  });
+});
