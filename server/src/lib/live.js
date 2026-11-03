@@ -200,6 +200,7 @@ export function publicState(presentation) {
   const quizRevealed = presentation.votingOpen === false;
   return {
     id: presentation._id,
+    ...(presentation.status ? { session: true } : {}),
     title: presentation.title,
     accessCode: presentation.accessCode,
     theme: presentation.theme,

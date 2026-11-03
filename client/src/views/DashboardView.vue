@@ -16,6 +16,7 @@ interface PresentationSummary {
   location?: string
   slideCount: number
   createdAt: string
+  activeSessions?: { id: string; code: string; startedAt: string }[]
 }
 
 const router = useRouter()
@@ -181,7 +182,11 @@ async function createPresentation(kind: CreationKind, title: string) {
           {{ p.slideCount }} slide{{ p.slideCount === 1 ? '' : 's' }}<span v-if="p.location"> · {{ p.location }}</span>
         </p>
         <div class="run-actions">
-          <button v-if="sessionsOn" class="button" :disabled="!p.slideCount || startingId === p._id" @click="startSession(p._id)">
+          <div v-for="run in p.activeSessions" :key="run.id" class="active-run">
+            <p class="muted run-hint">Active session · {{ run.code }}</p>
+            <router-link class="button" :to="{ name: 'present', params: { code: run.code } }">Resume session {{ run.code }}</router-link>
+          </div>
+          <button v-if="sessionsOn" :class="['button', p.activeSessions?.length ? 'secondary' : '']" :disabled="!p.slideCount || startingId === p._id" @click="startSession(p._id)">
             <span v-if="startingId === p._id" class="spinner" aria-hidden="true"></span>{{ startingId === p._id ? 'Starting…' : 'Start new session' }}
           </button>
           <p v-if="sessionsOn" class="muted run-hint">New code and blank answers. Keeps your slides and earlier results.</p>
@@ -244,6 +249,7 @@ async function createPresentation(kind: CreationKind, title: string) {
 </template>
 
 <style scoped>
+.active-run { display: grid; gap: var(--space-2); padding-bottom: var(--space-3); border-bottom: 1px solid var(--line); }
 .run-actions { display: grid; gap: var(--space-2); margin-top: auto; }
 .run-hint { margin: 0 0 var(--space-2); line-height: 1.5; }
 .export-menu { margin-top: var(--space-3, 12px); font-size: 0.875rem; }

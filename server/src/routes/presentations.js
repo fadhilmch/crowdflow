@@ -139,6 +139,16 @@ presentationsRouter.get('/', authenticate, async (req, res, next) => {
       Presentation.countDocuments({ owner }),
     ]);
     const page = rows.slice(0, limit);
+    // One bounded owner-only metadata query, never a per-card request or answer payload.
+    if (process.env.SESSIONS_ENABLED === 'true' && page.length) {
+      const active = await LiveSession.aggregate([
+        { $match: { owner, presentation: { $in: page.map((p) => p._id) }, status: 'active' } },
+        { $sort: { startedAt: -1, _id: -1 } },
+        { $group: { _id: '$presentation', runs: { $push: { id: '$_id', code: '$code', startedAt: '$startedAt' } } } },
+      ]);
+      const byDeck = new Map(active.map((group) => [String(group._id), group.runs]));
+      for (const deck of page) deck.activeSessions = byDeck.get(String(deck._id)) ?? [];
+    }
     const last = page[page.length - 1];
     const nextCursor = rows.length > limit && last ? `${new Date(last.createdAt).getTime()}_${last._id}` : null;
     return res.json({ data: page, total, nextCursor });

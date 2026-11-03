@@ -61,6 +61,8 @@ export interface LeaderboardEntry {
 }
 
 export interface PresentationState {
+  /** Separate immutable run: ending releases its join code and cannot be resumed. */
+  session?: boolean;
   id: string;
   title: string;
   accessCode: string;

@@ -85,3 +85,8 @@ Run the app (`npm run dev:memory` in `server/` with the client built), then comp
 - Ended audience screens show the terminal message and any final leaderboard, never active answer controls or waiting-for-results copy.
 - Put real product proof directly after the demo. Phone editor proof is a crop of the actual editor capture with an explicit full-editor link; steps and types stay compact.
 - Session-enabled dashboards make fresh sessions primary and explain new-code/blank-answer versus existing-code/kept-answer behavior in visible text.
+
+## Session lifecycle navigation
+
+- Surface all active session codes on the owner dashboard, with Resume before starting a new run. Owner listing metadata excludes slides, answers and participant IDs; no per-card API fan-out.
+- Confirm End from presenter and session report, with Cancel focused, trapped keyboard navigation, a busy state and errors inside the dialog. Explain immutable session versus reusable deck-run consequences. Close voting stays immediate.
