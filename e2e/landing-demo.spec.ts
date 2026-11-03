@@ -69,6 +69,9 @@ for (const width of [1280, 768, 390, 320]) for (const theme of ['light', 'dark']
     await page.addInitScript(theme=>localStorage.setItem('crowdflow.colorMode',theme),theme)
     await page.goto('/')
     await expect(page.locator('h1')).toBeVisible()
+    // Sample immediately: a retrying assertion would hide the initial inherited light ink.
+    expect(await page.locator('.join-label').evaluate(el => getComputedStyle(el).color))
+      .toBe(theme === 'dark' ? 'rgb(237, 238, 240)' : 'rgb(28, 32, 36)')
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(0)
     for (const kind of ['Poll','Word cloud','Quiz']) {
       await page.getByRole('button',{name:kind,exact:true}).click()
