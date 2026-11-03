@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
-test('demo works without a room: poll, cloud, quiz, controls and reset', async ({ page }) => {
+test('demo works without a room: poll, cloud, quiz, controls and reset', async ({ page }, testInfo) => {
   const liveWrites: string[] = []
   page.on('request', r => { if (r.method() !== 'GET' && /\/api\/(live|presentations)/.test(r.url())) liveWrites.push(r.url()) })
   await page.goto('/')
@@ -23,7 +23,7 @@ test('demo works without a room: poll, cloud, quiz, controls and reset', async (
   await demo.getByRole('button', { name: 'Word cloud', exact: true }).click()
   await phone.getByRole('button', { name: /Curious/ }).click()
   await expect(stage.locator('.cloud')).toContainText('Curious5')
-  await demo.screenshot({path:'/downloads/crowdflow-cloud-demo.png'})
+  await demo.screenshot({path:testInfo.outputPath('word-cloud.png')})
   await demo.getByRole('button', { name: 'Quiz', exact: true }).click()
   await phone.getByRole('button', { name: /Venus/ }).focus()
   await page.keyboard.press('Enter')
@@ -35,11 +35,11 @@ test('demo works without a room: poll, cloud, quiz, controls and reset', async (
   await phone.getByRole('button', { name: /Mercury/ }).click()
   await demo.getByRole('button', { name: 'Reveal answer' }).click()
   await expect(demo.getByRole('status')).toContainText('Correct!')
-  await demo.screenshot({path:'/downloads/crowdflow-quiz-demo.png'})
+  await demo.screenshot({path:testInfo.outputPath('quiz.png')})
   expect(liveWrites).toEqual([])
 })
 
-test('join is labelled, validates, sanitizes and preserves the existing route', async ({ page }) => {
+test('join is labelled, validates, sanitizes and preserves the existing route', async ({ page }, testInfo) => {
   await page.goto('/')
   const code=page.getByLabel('Enter your 6-digit code')
   await expect(code).toBeVisible()
@@ -53,7 +53,7 @@ test('join is labelled, validates, sanitizes and preserves the existing route', 
 })
 
 for (const width of [1280, 768, 390, 320]) for (const theme of ['light', 'dark']) {
-  test(`landing ${width}px ${theme}: no overflow, accessible demo and real images`, async ({ page }) => {
+  test(`landing ${width}px ${theme}: no overflow, accessible demo and real images`, async ({ page }, testInfo) => {
     await page.setViewportSize({width,height:844})
     await page.emulateMedia({reducedMotion:'reduce'})
     await page.addInitScript(theme=>localStorage.setItem('crowdflow.colorMode',theme),theme)
@@ -71,11 +71,11 @@ for (const width of [1280, 768, 390, 320]) for (const theme of ['light', 'dark']
     }
     await page.getByRole('button',{name:'Poll',exact:true}).click()
     await page.evaluate(()=>window.scrollTo(0,0))
-    await page.screenshot({path:`/downloads/crowdflow-after-${width}-${theme}.png`})
+    await page.screenshot({path:testInfo.outputPath(`landing-${width}-${theme}.png`)})
     const demo=page.getByRole('region',{name:'Interactive product demo'})
     await demo.scrollIntoViewIfNeeded()
-    await page.screenshot({path:`/downloads/crowdflow-demo-${width}-${theme}.png`})
+    await page.screenshot({path:testInfo.outputPath(`demo-${width}-${theme}.png`)})
     await page.locator('.product-proof').scrollIntoViewIfNeeded()
-    await page.screenshot({path:`/downloads/crowdflow-proof-${width}-${theme}.png`})
+    await page.screenshot({path:testInfo.outputPath(`product-proof-${width}-${theme}.png`)})
   })
 }
